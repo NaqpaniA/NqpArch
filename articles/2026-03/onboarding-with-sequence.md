@@ -142,6 +142,8 @@ tags: [architecture, onboarding, documentation, sequence-diagrams, governance]
 
 ---
 
+З.Ы. Идеальный сиквенс соберём в следующем посте
+
 ## 🔗 Ссылки
 
 - Telegram: https://t.me/nqparch
