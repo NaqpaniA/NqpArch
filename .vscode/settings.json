@@ -1,0 +1,118 @@
+{
+  "files.associations": {
+    "*.puml": "plantuml",
+    "*.pu": "plantuml",
+    "*.plantuml": "plantuml",
+    "*.iuml": "plantuml",
+    "*.wsd": "plantuml"
+  },
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 800,
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.fontFamily": "'JetBrains Mono', 'Cascadia Code', monospace",
+  "editor.fontLigatures": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "always",
+    "source.organizeImports": "always"
+  },
+  "editor.minimap.enabled": false,
+  "editor.scrollBeyondLastLine": false,
+  "editor.stickyScroll.enabled": true,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.linkedEditing": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.guides.indentation": true,
+  "editor.renderWhitespace": "selection",
+  "editor.suggestSelection": "first",
+  "editor.snippetSuggestions": "top",
+  "editor.tabCompletion": "on",
+  "editor.inlineSuggest.enabled": true,
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": "on",
+    "strings": "on"
+  },
+  "editor.smoothScrolling": true,
+  "editor.rulers": [100],
+  "workbench.editor.enablePreview": false,
+  "workbench.list.smoothScrolling": true,
+  "breadcrumbs.enabled": true,
+  "explorer.compactFolders": false,
+  "search.smartCase": true,
+  "search.exclude": {
+    "**/artifacts/out": true
+  },
+  "files.watcherExclude": {
+    "**/artifacts/out/**": true
+  },
+  "diffEditor.ignoreTrimWhitespace": false,
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "git.openRepositoryInParentFolders": "always",
+  "terminal.integrated.fontFamily": "'JetBrains Mono', 'Cascadia Mono', monospace",
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "bounded",
+    "editor.rulers": [100],
+    "files.trimTrailingWhitespace": false
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[plantuml]": {
+    "editor.defaultFormatter": "jebbs.plantuml",
+    "editor.formatOnSave": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.wordWrap": "off"
+  },
+  "markdown.preview.breaks": true,
+  "markdown.validate.enabled": true,
+  "markdownlint.run": "onSave",
+  "markdown.extension.toc.updateOnSave": true,
+  "plantuml.render": "Local",
+  "plantuml.java": "/home/ipa.nexign.com_ivan.krivtsov/.jdks/openjdk-25.0.2/bin/java",
+  "plantuml.previewAutoUpdate": true,
+  "plantuml.diagramsRoot": "artifacts",
+  "plantuml.includepaths": [
+    "artifacts/templates",
+    "artifacts/templates/styles",
+    "artifacts/diagrams"
+  ],
+  "plantuml.exportFormat": "png",
+  "plantuml.exportOutDir": "artifacts/out",
+  "plantuml.exportSubFolder": false,
+  "plantuml.exportIncludeFolderHeirarchy": true,
+  "plantuml.lintDiagramNoName": false,
+  "yaml.format.enable": true,
+  "yaml.validate": true,
+  "cSpell.language": "en,ru-RU",
+  "cSpell.words": [
+    "Archistrator",
+    "NaqpaniA",
+    "NqpArch",
+    "PlantUML",
+    "Structurizr",
+    "busfactor"
+  ],
+  "markdown-preview-enhanced.plantumlServer": "https://www.plantuml.com/plantuml/svg/",
+  "python-envs.pythonProjects": [
+    {
+      "path": "artifacts/diagrams/sequence/Riddler Service/Service",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
+    }
+  ],
+  "chat.tools.terminal.autoApprove": {
+    "git pull": true
+  }
+}

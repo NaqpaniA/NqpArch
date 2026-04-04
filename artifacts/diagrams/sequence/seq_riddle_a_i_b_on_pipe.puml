@@ -1,119 +1,50 @@
 @startuml
-!pragma teoz true
-!include _style_seq_canonical.puml
-
+!include ../../templates/styles/_style_seq.puml
 autonumber
 
-SEQ_TITLE("Riddle sequence: \"А, И, Б сидели на трубе\"")
-SEQ_SUBTITLE("Example of a clean, article-friendly sequence diagram built on the canonical style")
-SEQ_LEGEND_FULL_TOP_RIGHT()
-SEQ_FOOTER_NOTE("Interpret the riddle as state transitions over a shared object")
+title Riddle: A, I, B on the pipe
 
-SEQ_LAYER_USER_BEGIN()
-    actor "Narrator" as narrator
-    actor "Reader" as reader
-SEQ_LAYER_END()
+actor Читатель as reader
+participant Книга as book
+participant Труба as pipe
+participant A as a
+participant I as i
+participant B as b
 
-SEQ_LAYER_CORE_BEGIN()
-    boundary "Pipe" as pipe
-    control "Riddle Resolver" as resolver <<p_new>>
-SEQ_LAYER_END()
+== Question ==
+reader -> book : Who remains on the pipe?
+activate book
+note right of book
+    Restore state
+    from riddle conditions
+end note
 
-SEQ_LAYER_CFG_BEGIN()
-    entity "Riddle semantics" as semantics <<p_cfg>>
-SEQ_LAYER_END()
+== Initial state ==
+group A, I, B are on the pipe
+    book -> pipe : place(A, I, B)
+    activate pipe
+    pipe --> book : state = [A, I, B]
+    deactivate pipe
+end
 
-SEQ_LAYER_DATA_BEGIN()
-    database "Pipe state" as pipe_state
-SEQ_LAYER_END()
+== Events ==
+    a ->> pipe : fall()
+    activate pipe
+    pipe --> book : state = [I, B]
+    deactivate pipe
 
-SEQ_LAYER_EXT_BEGIN()
-    actor "Gravity / world events" as world <<p_ext>>
-SEQ_LAYER_END()
+    b ->> pipe : disappear()
+    activate pipe
+    pipe --> book : state = [I]
+    deactivate pipe
 
-participant "A" as A
-participant "И" as I
-participant "Б" as B
+== Answer ==
+    book -> pipe : whoRemains()
+    activate pipe
+    pipe --> book : I
+    deactivate pipe
 
-SEQ_SECTION("Initial state")
-SEQ_REQ(narrator, pipe, "Place A, И, Б on the pipe")
-activate pipe
-    SEQ_REQ(pipe, A, "seatOnPipe()")
-    activate A
-    SEQ_RESP_OK(A, pipe, "on pipe")
-    deactivate A
-
-    SEQ_REQ(pipe, I, "seatOnPipe()")
-    activate I
-    SEQ_RESP_OK(I, pipe, "on pipe")
-    deactivate I
-
-    SEQ_REQ(pipe, B, "seatOnPipe()")
-    activate B
-    SEQ_RESP_OK(B, pipe, "on pipe")
-    deactivate B
-
-    SEQ_REQ(pipe, pipe_state, "save occupants = [A, И, Б]")
-    activate pipe_state
-    SEQ_RESP_OK(pipe_state, pipe, "state saved")
-    deactivate pipe_state
-SEQ_RESP_OK(pipe, narrator, "initial state registered")
-deactivate pipe
-
-SEQ_NOTE_OVER(pipe, "The pipe is modeled as a shared object with mutable occupancy state")
-
-SEQ_SECTION("Event 1: A falls")
-SEQ_ASYNC(world, A, "fall()")
-activate A
-    SEQ_RESP_WARN(A, pipe, "A left the pipe")
-deactivate A
-
-activate pipe
-    SEQ_GROUP_INFO("Update occupancy after fall")
-        SEQ_REQ(pipe, pipe_state, "remove occupant = A")
-        activate pipe_state
-        SEQ_RESP_OK(pipe_state, pipe, "occupants = [И, Б]")
-        deactivate pipe_state
-    end
-deactivate pipe
-
-SEQ_SECTION("Event 2: Б disappears")
-SEQ_ASYNC(world, B, "disappear()")
-activate B
-    SEQ_RESP_WARN(B, pipe, "Б no longer present")
-deactivate B
-
-activate pipe
-    SEQ_GROUP_INFO("Update occupancy after disappearance")
-        SEQ_REQ(pipe, pipe_state, "remove occupant = Б")
-        activate pipe_state
-        SEQ_RESP_OK(pipe_state, pipe, "occupants = [И]")
-        deactivate pipe_state
-    end
-
-    ref over pipe, pipe_state
-        Subflow: state transition on a shared object
-    end ref
-deactivate pipe
-
-SEQ_SECTION("Question and answer")
-SEQ_REQ(reader, resolver, "Who remained on the pipe?")
-activate resolver
-    SEQ_REQ_CFG(resolver, semantics, "Clarify interpretation of the phrase")
-    activate semantics
-    SEQ_RESP_OK(semantics, resolver, "\"И\" is a named participant, not a conjunction")
-    deactivate semantics
-
-    SEQ_REQ(resolver, pipe_state, "read current occupants")
-    activate pipe_state
-    SEQ_RESP_OK(pipe_state, resolver, "[И]")
-    deactivate pipe_state
-
-    SEQ_OPT_WARN("Typical reader ambiguity")
-        SEQ_NOTE_RIGHT(resolver, "Without explicit semantic clarification, the reader may treat \"И\" as the conjunction \"and\"")
-    end
-
-    SEQ_RESP_OK(resolver, reader, "Answer: И")
-deactivate resolver
+    book --> reader : I remains on the pipe
+deactivate book
 
 @enduml

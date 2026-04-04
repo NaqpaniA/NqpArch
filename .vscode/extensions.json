@@ -1,0 +1,19 @@
+{
+  "recommendations": [
+    "k--kato.intellij-idea-keybindings",
+    "eamodio.gitlens",
+    "EditorConfig.EditorConfig",
+    "esbenp.prettier-vscode",
+    "jebbs.plantuml",
+    "yzhang.markdown-all-in-one",
+    "shd101wyy.markdown-preview-enhanced",
+    "davidanson.vscode-markdownlint",
+    "streetsidesoftware.code-spell-checker",
+    "redhat.vscode-yaml",
+    "redhat.vscode-xml",
+    "42Crunch.vscode-openapi",
+    "humao.rest-client",
+    "hediet.vscode-drawio",
+    "rpiontik.archistrator"
+  ]
+}

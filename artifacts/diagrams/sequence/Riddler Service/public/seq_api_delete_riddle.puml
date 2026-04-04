@@ -1,0 +1,60 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Управление загадками: Удаление (DELETE /v1/riddle/{riddleId})")
+    $SM($MUTED("Самостоятельный архитектурный артефакт"))
+    $SM($MUTED("[[../Contracts/sync-riddler-service-api.yaml OpenAPI Contract]]"))
+end title
+
+footer $SM($MUTED("1 public method = 1 sequence diagram"))
+
+box "API: DELETE /v1/riddle" $BG_INFO
+    actor "Actor" as actor
+    participant "Riddle Service" as riddler
+end box
+
+activate actor
+    actor -> riddler : <<DELETE>> /v1/riddle/{riddleId}(headers): RiddleResponse
+    activate riddler
+        riddler -> riddler: base validate request(requirement parameters, types)
+        break $BG_CRIT ValidateResponse==invalid
+            riddler --> actor: <<HTTP: 400>> RiddlerResponse: (code: 100, message: "Invalid request")
+        end break
+
+        riddler -> riddler: <<sub-flow>> private.validateRequest\n(method:"DELETE/v1/riddle", request: {}, headers: {}): ValidateResponse
+        ref over riddler
+            $B("[[private_validateRequest.puml private.validateRequest]]")
+            $B("method, headers, token, etc.")
+
+            Поскольку операция является деструктивной,
+            метод строго требует наличия административной
+            роли (например, RIDDLE_ADMIN) в токене.
+        end ref
+
+        break $BG_CRIT ValidateResponse != valid
+            riddler --> actor: <<HTTP: 401 / 403 / 500>> Error Response
+        end break
+
+        riddler -> riddler: <<sub-flow>> private.deleteRiddle\n(riddleId): DeleteRiddleResponse
+        ref over riddler
+            $B("[[private_deleteRiddle.puml private.deleteRiddle]]")
+            $B("riddleId")
+
+            Безопасное исключение загадки из активного
+            каталога (физическое удаление или soft delete).
+        end ref
+        break $BG_CRIT DeleteRiddleResponse != OK
+            riddler --> actor: <<HTTP: 404 / 500>> Error Response
+        end break
+
+        riddler --> actor: <<HTTP: 200>> RiddleResponse: (code: 0, message: "OK")
+
+    deactivate riddler
+deactivate actor
+
+SEQ_LEGEND_STATUS()
+@enduml

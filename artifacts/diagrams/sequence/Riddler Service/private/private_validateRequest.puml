@@ -1,0 +1,46 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Sub-flow: private.validateRequest")
+    $SM($MUTED("Комплексная валидация запроса и проверка прав доступа (РМД)"))
+end title
+
+box "Riddle Service" $BG_INFO
+    participant "Riddle Service" as riddler
+end box
+
+box "Security" $BG_CFG
+    collections "JWKS Cache" as jwks
+end box
+
+riddler -> riddler : private.validateRequest(method, request, headers)
+activate riddler
+
+    riddler -> jwks : getPublicKey(kid)
+    activate jwks
+        jwks --> riddler : publicKey | notFound
+    deactivate jwks
+
+    break $BG_CRIT jwks == notFound
+        riddler --> riddler : ValidateResponse(error)
+    end break
+
+    riddler -> riddler : verifySignature(token, publicKey) \n=> TokenInfo
+    break $BG_CRIT TokenInfo == invalid OR expired
+        riddler --> riddler : ValidateResponse(error | unauthorized)
+    end break
+
+    riddler -> riddler : checkMethodRole(method, TokenInfo.roles)
+    break $BG_CRIT role == missing
+        riddler --> riddler : ValidateResponse(forbidden)
+    end break
+
+    riddler --> riddler : ValidateResponse(valid)
+deactivate riddler
+
+SEQ_LEGEND_STATUS()
+@enduml

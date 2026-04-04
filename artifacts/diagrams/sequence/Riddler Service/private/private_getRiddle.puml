@@ -1,0 +1,43 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Sub-flow: private.getRiddle")
+    $SM($MUTED("Эвристический подбор подходящей загадки"))
+end title
+
+box "Riddle Service" $BG_INFO
+    participant "Riddle Service" as riddler
+end box
+
+box "Data" $BG_CFG
+    database "Riddle Catalog" as catalog
+end box
+
+riddler -> riddler : private.getRiddle(category, difficulty, context)
+activate riddler
+
+    riddler -> catalog : findCandidate(category, difficulty, context)
+    activate catalog
+        opt#$FR_WARN_HEAD #$FR_WARN_BG Точное совпадение не найдено
+            catalog -> catalog : broadenFilters(fallbackDifficulty)
+        end
+        catalog --> riddler : candidate | null | error
+    deactivate catalog
+
+    break $BG_CRIT catalog == error OR candidate == null
+        riddler --> riddler : GetRiddleResponse(error | notFound)
+    end break
+
+    note right of riddler
+        Трансформация DTO схемы БД
+        в бизнес-модель ответа
+    end note
+    riddler --> riddler : GetRiddleResponse(riddleId, category, difficulty, context)
+deactivate riddler
+
+SEQ_LEGEND_STATUS()
+@enduml

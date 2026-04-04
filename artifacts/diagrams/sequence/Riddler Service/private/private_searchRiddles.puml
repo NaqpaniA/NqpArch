@@ -1,0 +1,41 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Sub-flow: private.searchRiddles")
+    $SM($MUTED("Поиск и фильтрация загадок в каталоге"))
+end title
+
+box "Riddle Service" $BG_INFO
+    participant "Riddle Service" as riddler
+end box
+
+box "Data" $BG_CFG
+    database "Riddle Catalog\n(PostgreSQL)" as catalog
+end box
+
+riddler -> riddler : private.searchRiddles(category, difficulty, limit, offset)
+activate riddler
+
+    riddler -> catalog : find(category, difficulty, limit, offset)
+    activate catalog
+        catalog --> riddler : items, totalCount | error
+    deactivate catalog
+
+    break $BG_CRIT catalog == error
+        riddler --> riddler : SearchRiddlesResponse(error)
+    end break
+
+    note right of riddler
+        Формирование ответа со списком 
+        загадок и метаданными пагинации
+    end note
+    
+    riddler --> riddler : SearchRiddlesResponse(items)
+deactivate riddler
+
+SEQ_LEGEND_STATUS()
+@enduml

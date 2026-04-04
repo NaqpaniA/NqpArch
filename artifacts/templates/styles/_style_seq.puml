@@ -16,7 +16,7 @@ skinparam roundcorner 24
 ' ---------------------------------------------------------
 ' Sequence layout
 ' ---------------------------------------------------------
-skinparam maxMessageSize 100
+skinparam maxMessageSize 200
 skinparam responseMessageBelowArrow true
 skinparam sequenceMessageAlign left
 
@@ -113,10 +113,105 @@ skinparam LegendFontColor #263238
 !$BG_CFG     = "#EDEFF7"
 !$BG_NEUTRAL = "#F8FAFC"
 
+' Fragment colors must be stored without leading # because
+' sequence fragment syntax already injects the # token itself.
+!$FR_INFO_HEAD = "D8E2F1"
+!$FR_INFO_BG   = "EEF4FF"
+!$FR_WARN_HEAD = "E8D9B5"
+!$FR_WARN_BG   = "FFF8E1"
+!$FR_CRIT_HEAD = "E7C9C9"
+!$FR_CRIT_BG   = "FFEBEE"
+!$FR_NEUTRAL_BG = "F8FAFC"
+!$SEQ_CURRENT_TITLE = ""
+
+' ---------------------------------------------------------
+' Text tags
+' Compose them freely:
+'   $B("Title")
+'   $SM($MUTED("subtitle"))
+'   $FONT("DejaVu Sans Mono", $WARN("payload"))
+' ---------------------------------------------------------
+!function $B($TEXT)
+    !return "<b>" + $TEXT + "</b>"
+!endfunction
+
+!function $I($TEXT)
+    !return "<i>" + $TEXT + "</i>"
+!endfunction
+
+!function $FONT($NAME, $TEXT)
+    !return "<font:" + $NAME + ">" + $TEXT + "</font>"
+!endfunction
+
+!function $SIZE($VALUE, $TEXT)
+    !return "<size:" + $VALUE + ">" + $TEXT + "</size>"
+!endfunction
+
+!function $COLOR($VALUE, $TEXT)
+    !return "<color:" + $VALUE + ">" + $TEXT + "</color>"
+!endfunction
+
+!function $XS($TEXT)
+    !return $SIZE("11", $TEXT)
+!endfunction
+
+!function $SM($TEXT)
+    !return $SIZE("12", $TEXT)
+!endfunction
+
+!function $LG($TEXT)
+    !return $SIZE("14", $TEXT)
+!endfunction
+
+!function $XL($TEXT)
+    !return $SIZE("16", $TEXT)
+!endfunction
+
+!function $MUTED($TEXT)
+    !return $COLOR($C_INFO, $TEXT)
+!endfunction
+
+!function $INFO($TEXT)
+    !return $COLOR($C_INFO, $TEXT)
+!endfunction
+
+!function $WARN($TEXT)
+    !return $COLOR($C_WARN, $TEXT)
+!endfunction
+
+!function $CRIT($TEXT)
+    !return $COLOR($C_CRIT, $TEXT)
+!endfunction
+
+!function $NEW($TEXT)
+    !return $COLOR($C_NEW, $TEXT)
+!endfunction
+
+!function $CHG($TEXT)
+    !return $COLOR($C_CHG, $TEXT)
+!endfunction
+
+!function $DEL($TEXT)
+    !return $COLOR($C_DEL, $TEXT)
+!endfunction
+
+!function $CFG($TEXT)
+    !return $COLOR($C_CFG, $TEXT)
+!endfunction
+
+!function $MONO($TEXT)
+    !return $FONT("DejaVu Sans Mono", $TEXT)
+!endfunction
+
 ' ---------------------------------------------------------
 ' Layer palette
 ' ---------------------------------------------------------
 !$L_USER         = "#F5F7FA"
+!$L_API          = "#EEF4FF"
+!$L_CORE         = "#F5F7FA"
+!$L_INTEGRATION  = "#FCEEF3"
+!$L_DATA         = "#ECFDF3"
+!$L_OPS          = "#FFF7ED"
 !$L_BSS          = "#EAF7EE"
 !$L_BUS          = "#FFF8E8"
 !$L_PAY          = "#EEF4FF"
@@ -198,7 +293,7 @@ skinparam LegendFontColor #263238
 ' ---------------------------------------------------------
 !procedure SEQ_LEGEND_STATUS()
     legend top left
-        |Mark     | Meaning  |<#000000>|Mark     | Meaning  |
+        |Mark     | Meaning  |<#000000>|Mark      | Meaning  |
         |<$C_NEW> | new      |<#000000>|<#EEF4FF> | info     |
         |<$C_CHG> | changed  |<#000000>|<#FFF8E1> | warning  |
         |<$C_DEL> | removed  |<#000000>|<#FFEBEE> | critical |
@@ -217,6 +312,21 @@ skinparam LegendFontColor #263238
     endlegend
 !endprocedure
 
+!procedure SEQ_LEGEND_FULL_TOP_RIGHT()
+    legend top right
+        |= Mark |= Meaning |
+        |<$C_NEW> | new / introduced |
+        |<$C_CHG> | changed |
+        |<$C_DEL> | removed |
+        |<$C_CFG> | configuration |
+        |<#E8F5E9> | new participant |
+        |<#EEF4FF> | changed participant |
+        |<#FFEBEE> | removed participant |
+        |<#FFF8E1> | legacy participant |
+        |<#EDEFF7> | configuration source |
+    endlegend
+!endprocedure
+
 !procedure $LEGEND_STATUS_SEQ()
     SEQ_LEGEND_STATUS()
 !endprocedure
@@ -225,19 +335,32 @@ skinparam LegendFontColor #263238
 ' Title / headers / footers
 ' ---------------------------------------------------------
 !procedure SEQ_TITLE($TEXT)
-    title <b>$TEXT</b>
+    !$SEQ_CURRENT_TITLE = $TEXT
+    title $TEXT
+!endprocedure
+
+!procedure SEQ_SUBTITLE($TEXT)
+    title $SEQ_CURRENT_TITLE\n$TEXT
+!endprocedure
+
+!procedure SEQ_HEADER($TEXT)
+    header $TEXT
+!endprocedure
+
+!procedure SEQ_FOOTER($TEXT)
+    footer $TEXT
 !endprocedure
 
 !procedure SEQ_TITLE_NOT_RECOMMENDED($TEXT)
-    title <b>$TEXT</b>\n<color:#D50000><b>NOT RECOMMENDED BY ARCHITECTURE</b></color>
+    title $B($TEXT)\n$SM($CRIT($B("NOT RECOMMENDED BY ARCHITECTURE")))
 !endprocedure
 
 !procedure SEQ_HEADER_WARN($TEXT)
-    header <color:#B71C1C><b>$TEXT</b></color>
+    header $B($WARN($TEXT))
 !endprocedure
 
 !procedure SEQ_FOOTER_NOTE($TEXT)
-    footer <color:#546E7A>$TEXT</color>
+    footer $SM($MUTED($TEXT))
 !endprocedure
 
 ' ---------------------------------------------------------
@@ -256,6 +379,34 @@ skinparam LegendFontColor #263238
 ' ---------------------------------------------------------
 !procedure SEQ_LAYER_USER_BEGIN()
     box "User / Channel" $L_USER
+!endprocedure
+
+!procedure SEQ_LAYER_API_BEGIN()
+    box "API / Entry" $L_API
+!endprocedure
+
+!procedure SEQ_LAYER_CORE_BEGIN()
+    box "Core / Orchestration" $L_CORE
+!endprocedure
+
+!procedure SEQ_LAYER_INT_BEGIN()
+    box "Integration / Messaging" $L_INTEGRATION
+!endprocedure
+
+!procedure SEQ_LAYER_INTEGRATION_BEGIN()
+    box "Integration / Messaging" $L_INTEGRATION
+!endprocedure
+
+!procedure SEQ_LAYER_CFG_BEGIN()
+    box "Configuration" $L_CONFIG
+!endprocedure
+
+!procedure SEQ_LAYER_DATA_BEGIN()
+    box "Data / State" $L_DATA
+!endprocedure
+
+!procedure SEQ_LAYER_OPS_BEGIN()
+    box "Operations / Platform" $L_OPS
 !endprocedure
 
 !procedure SEQ_LAYER_BSS_BEGIN()
@@ -322,130 +473,130 @@ skinparam LegendFontColor #263238
 
 ' ----- ALT / ELSE -----
 !procedure SEQ_ALT_INFO($LABEL)
-    alt#$BG_INFO #$C_INFO $LABEL
+    alt#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 !procedure SEQ_ALT_WARN($LABEL)
-    alt#$BG_WARN #$C_WARN $LABEL
+    alt#$FR_WARN_HEAD #$FR_WARN_BG $LABEL
 !endprocedure
 
 !procedure SEQ_ALT_CRIT($LABEL)
-    alt#$BG_CRIT #$C_CRIT $LABEL
+    alt#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_ELSE_INFO($LABEL)
-    else #$BG_INFO $LABEL
+    else #$FR_INFO_BG $LABEL
 !endprocedure
 
 !procedure SEQ_ELSE_WARN($LABEL)
-    else #$BG_WARN $LABEL
+    else #$FR_WARN_BG $LABEL
 !endprocedure
 
 !procedure SEQ_ELSE_CRIT($LABEL)
-    else #$BG_CRIT $LABEL
+    else #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_ELSE_NEUTRAL($LABEL)
-    else #$BG_NEUTRAL $LABEL
+    else #$FR_NEUTRAL_BG $LABEL
 !endprocedure
 
 ' Default aliases
 !procedure SEQ_ALT($LABEL)
-    alt#$BG_INFO #$C_INFO $LABEL
+    alt#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 !procedure SEQ_ELSE($LABEL)
-    else #$BG_INFO $LABEL
+    else #$FR_INFO_BG $LABEL
 !endprocedure
 
 ' ----- OPT -----
 !procedure SEQ_OPT_INFO($LABEL)
-    opt#$BG_INFO #$C_INFO $LABEL
+    opt#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 !procedure SEQ_OPT_WARN($LABEL)
-    opt#$BG_WARN #$C_WARN $LABEL
+    opt#$FR_WARN_HEAD #$FR_WARN_BG $LABEL
 !endprocedure
 
 !procedure SEQ_OPT_CRIT($LABEL)
-    opt#$BG_CRIT #$C_CRIT $LABEL
+    opt#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_OPT($LABEL)
-    opt#$BG_INFO #$C_INFO $LABEL
+    opt#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 ' ----- LOOP -----
 !procedure SEQ_LOOP_INFO($LABEL)
-    loop#$BG_INFO #$C_INFO $LABEL
+    loop#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 !procedure SEQ_LOOP_WARN($LABEL)
-    loop#$BG_WARN #$C_WARN $LABEL
+    loop#$FR_WARN_HEAD #$FR_WARN_BG $LABEL
 !endprocedure
 
 !procedure SEQ_LOOP_CRIT($LABEL)
-    loop#$BG_CRIT #$C_CRIT $LABEL
+    loop#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_LOOP($LABEL)
-    loop#$BG_INFO #$C_INFO $LABEL
+    loop#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 ' ----- PAR -----
 !procedure SEQ_PAR_INFO($LABEL)
-    par#$BG_INFO #$C_INFO $LABEL
+    par#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 !procedure SEQ_PAR_WARN($LABEL)
-    par#$BG_WARN #$C_WARN $LABEL
+    par#$FR_WARN_HEAD #$FR_WARN_BG $LABEL
 !endprocedure
 
 !procedure SEQ_PAR_CRIT($LABEL)
-    par#$BG_CRIT #$C_CRIT $LABEL
+    par#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_PAR($LABEL)
-    par#$BG_INFO #$C_INFO $LABEL
+    par#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 ' ----- BREAK -----
 !procedure SEQ_BREAK_WARN($LABEL)
-    break#$BG_WARN #$C_WARN $LABEL
+    break#$FR_WARN_HEAD #$FR_WARN_BG $LABEL
 !endprocedure
 
 !procedure SEQ_BREAK_CRIT($LABEL)
-    break#$BG_CRIT #$C_CRIT $LABEL
+    break#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_BREAK($LABEL)
-    break#$BG_WARN #$C_WARN $LABEL
+    break#$FR_WARN_HEAD #$FR_WARN_BG $LABEL
 !endprocedure
 
 ' ----- CRITICAL -----
 !procedure SEQ_CRITICAL_RED($LABEL)
-    critical#$BG_CRIT #$C_CRIT $LABEL
+    critical#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_CRITICAL($LABEL)
-    critical#$BG_CRIT #$C_CRIT $LABEL
+    critical#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 ' ----- GROUP -----
 !procedure SEQ_GROUP_INFO($LABEL)
-    group#$BG_INFO #$C_INFO $LABEL
+    group#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 !procedure SEQ_GROUP_WARN($LABEL)
-    group#$BG_WARN #$C_WARN $LABEL
+    group#$FR_WARN_HEAD #$FR_WARN_BG $LABEL
 !endprocedure
 
 !procedure SEQ_GROUP_CRIT($LABEL)
-    group#$BG_CRIT #$C_CRIT $LABEL
+    group#$FR_CRIT_HEAD #$FR_CRIT_BG $LABEL
 !endprocedure
 
 !procedure SEQ_GROUP($LABEL)
-    group#$BG_INFO #$C_INFO $LABEL
+    group#$FR_INFO_HEAD #$FR_INFO_BG $LABEL
 !endprocedure
 
 ' ---------------------------------------------------------
@@ -473,4 +624,286 @@ skinparam LegendFontColor #263238
     note over $WHO
         $TEXT
     end note
+!endprocedure
+
+' ---------------------------------------------------------
+' Arrow helpers
+' ---------------------------------------------------------
+!procedure SEQ_REQ($FROM, $TO, $LABEL)
+    $FROM -[#546E7A]> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_REQ_NEW($FROM, $TO, $LABEL)
+    $FROM -[$C_NEW]> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_REQ_CHG($FROM, $TO, $LABEL)
+    $FROM -[$C_CHG]> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_REQ_DEL($FROM, $TO, $LABEL)
+    $FROM -[$C_DEL]-> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_REQ_CFG($FROM, $TO, $LABEL)
+    $FROM -[$C_CFG]> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_ASYNC($FROM, $TO, $LABEL)
+    $FROM -[#546E7A]>> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_ASYNC_NEW($FROM, $TO, $LABEL)
+    $FROM -[$C_NEW]>> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_ASYNC_CHG($FROM, $TO, $LABEL)
+    $FROM -[$C_CHG]>> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_ASYNC_CFG($FROM, $TO, $LABEL)
+    $FROM -[$C_CFG]>> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_ASYNC_DEL($FROM, $TO, $LABEL)
+    $FROM -[$C_DEL]>> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_RESP($FROM, $TO, $LABEL)
+    $FROM --[#546E7A]> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_RESP_OK($FROM, $TO, $LABEL)
+    $FROM --[$C_NEW]> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_RESP_WARN($FROM, $TO, $LABEL)
+    $FROM --[$C_WARN]> $TO : $LABEL
+!endprocedure
+
+!procedure SEQ_RESP_ERR($FROM, $TO, $LABEL)
+    $FROM --[$C_CRIT]> $TO : $LABEL
+!endprocedure
+
+' ---------------------------------------------------------
+' Optional $-prefixed wrappers for the tag-like API
+' ---------------------------------------------------------
+!procedure $SEQ_LEGEND_FULL_TOP_RIGHT()
+    SEQ_LEGEND_FULL_TOP_RIGHT()
+!endprocedure
+
+!procedure $SEQ_GROUP_INFO($LABEL)
+    SEQ_GROUP_INFO($LABEL)
+!endprocedure
+
+!procedure $SEQ_GROUP_WARN($LABEL)
+    SEQ_GROUP_WARN($LABEL)
+!endprocedure
+
+!procedure $SEQ_GROUP_CRIT($LABEL)
+    SEQ_GROUP_CRIT($LABEL)
+!endprocedure
+
+!procedure $SEQ_GROUP($LABEL)
+    SEQ_GROUP($LABEL)
+!endprocedure
+
+!procedure $SEQ_TITLE($TEXT)
+    SEQ_TITLE($TEXT)
+!endprocedure
+
+!procedure $SEQ_SUBTITLE($TEXT)
+    SEQ_SUBTITLE($TEXT)
+!endprocedure
+
+!procedure $SEQ_HEADER($TEXT)
+    SEQ_HEADER($TEXT)
+!endprocedure
+
+!procedure $SEQ_HEADER_WARN($TEXT)
+    SEQ_HEADER_WARN($TEXT)
+!endprocedure
+
+!procedure $SEQ_FOOTER($TEXT)
+    SEQ_FOOTER($TEXT)
+!endprocedure
+
+!procedure $SEQ_FOOTER_NOTE($TEXT)
+    SEQ_FOOTER_NOTE($TEXT)
+!endprocedure
+
+!procedure $SEQ_SECTION($TEXT)
+    SEQ_SECTION($TEXT)
+!endprocedure
+
+!procedure $SEQ_DELAY($TEXT)
+    SEQ_DELAY($TEXT)
+!endprocedure
+
+!procedure $SEQ_LAYER_USER_BEGIN()
+    SEQ_LAYER_USER_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_API_BEGIN()
+    SEQ_LAYER_API_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_CORE_BEGIN()
+    SEQ_LAYER_CORE_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_INT_BEGIN()
+    SEQ_LAYER_INT_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_INTEGRATION_BEGIN()
+    SEQ_LAYER_INTEGRATION_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_CFG_BEGIN()
+    SEQ_LAYER_CFG_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_CONFIG_BEGIN()
+    SEQ_LAYER_CONFIG_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_DATA_BEGIN()
+    SEQ_LAYER_DATA_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_EXT_BEGIN()
+    SEQ_LAYER_EXT_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_OPS_BEGIN()
+    SEQ_LAYER_OPS_BEGIN()
+!endprocedure
+
+!procedure $SEQ_LAYER_CUSTOM_BEGIN($TITLE, $COLOR)
+    SEQ_LAYER_CUSTOM_BEGIN($TITLE, $COLOR)
+!endprocedure
+
+!procedure $SEQ_LAYER_END()
+    SEQ_LAYER_END()
+!endprocedure
+
+!procedure $SEQ_REQ($FROM, $TO, $LABEL)
+    SEQ_REQ($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_REQ_NEW($FROM, $TO, $LABEL)
+    SEQ_REQ_NEW($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_REQ_CHG($FROM, $TO, $LABEL)
+    SEQ_REQ_CHG($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_REQ_DEL($FROM, $TO, $LABEL)
+    SEQ_REQ_DEL($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_REQ_CFG($FROM, $TO, $LABEL)
+    SEQ_REQ_CFG($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_ASYNC($FROM, $TO, $LABEL)
+    SEQ_ASYNC($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_ASYNC_NEW($FROM, $TO, $LABEL)
+    SEQ_ASYNC_NEW($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_ASYNC_CHG($FROM, $TO, $LABEL)
+    SEQ_ASYNC_CHG($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_ASYNC_CFG($FROM, $TO, $LABEL)
+    SEQ_ASYNC_CFG($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_ASYNC_DEL($FROM, $TO, $LABEL)
+    SEQ_ASYNC_DEL($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_RESP($FROM, $TO, $LABEL)
+    SEQ_RESP($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_RESP_OK($FROM, $TO, $LABEL)
+    SEQ_RESP_OK($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_RESP_WARN($FROM, $TO, $LABEL)
+    SEQ_RESP_WARN($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_RESP_ERR($FROM, $TO, $LABEL)
+    SEQ_RESP_ERR($FROM, $TO, $LABEL)
+!endprocedure
+
+!procedure $SEQ_ALT_INFO($LABEL)
+    SEQ_ALT_INFO($LABEL)
+!endprocedure
+
+!procedure $SEQ_ALT_WARN($LABEL)
+    SEQ_ALT_WARN($LABEL)
+!endprocedure
+
+!procedure $SEQ_ALT_CRIT($LABEL)
+    SEQ_ALT_CRIT($LABEL)
+!endprocedure
+
+!procedure $SEQ_ALT($LABEL)
+    SEQ_ALT($LABEL)
+!endprocedure
+
+!procedure $SEQ_ELSE_INFO($LABEL)
+    SEQ_ELSE_INFO($LABEL)
+!endprocedure
+
+!procedure $SEQ_ELSE_WARN($LABEL)
+    SEQ_ELSE_WARN($LABEL)
+!endprocedure
+
+!procedure $SEQ_ELSE_CRIT($LABEL)
+    SEQ_ELSE_CRIT($LABEL)
+!endprocedure
+
+!procedure $SEQ_ELSE_NEUTRAL($LABEL)
+    SEQ_ELSE_NEUTRAL($LABEL)
+!endprocedure
+
+!procedure $SEQ_ELSE($LABEL)
+    SEQ_ELSE($LABEL)
+!endprocedure
+
+!procedure $SEQ_OPT_INFO($LABEL)
+    SEQ_OPT_INFO($LABEL)
+!endprocedure
+
+!procedure $SEQ_OPT_WARN($LABEL)
+    SEQ_OPT_WARN($LABEL)
+!endprocedure
+
+!procedure $SEQ_OPT_CRIT($LABEL)
+    SEQ_OPT_CRIT($LABEL)
+!endprocedure
+
+!procedure $SEQ_OPT($LABEL)
+    SEQ_OPT($LABEL)
+!endprocedure
+
+!procedure $SEQ_NOTE_RIGHT($WHO, $TEXT)
+    SEQ_NOTE_RIGHT($WHO, $TEXT)
+!endprocedure
+
+!procedure $SEQ_NOTE_LEFT($WHO, $TEXT)
+    SEQ_NOTE_LEFT($WHO, $TEXT)
+!endprocedure
+
+!procedure $SEQ_NOTE_OVER($WHO, $TEXT)
+    SEQ_NOTE_OVER($WHO, $TEXT)
 !endprocedure

@@ -1,0 +1,6 @@
+.idea/
+.codex
+
+artifacts/out/
+
+.vscode/*.local

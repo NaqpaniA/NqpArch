@@ -1,0 +1,559 @@
+openapi: 3.0.3
+info:
+  title: API Riddle Service (Синхронное API)
+  description: |
+    Синхронное API для управления каталогом загадок и оркестрации процесса отгадывания.
+    Обеспечивает валидацию по РМД (ролевой матрице доступов), управление сессиями
+    и интеграцию с хранилищем (Riddle Catalog) и IAM.
+  version: 1.0.0
+  contact:
+    name: Architecture Office (NqpArch)
+
+servers:
+  - url: http://localhost:8000
+    description: Локальный сервер для тестирования
+  - url: https://api.example.com
+    description: Продуктовый контур
+
+tags:
+  - name: Process
+    description: Публичные методы для процесса отгадывания
+  - name: Management
+    description: Управление каталогом загадок (требуются специальные роли)
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/riddle:
+    get:
+      tags:
+        - Process
+      summary: Инициализировать процесс отгадывания
+      description: |
+        Инициализирует процесс отгадывания. Выполняет эвристический подбор релевантной загадки
+        из каталога с учетом переданного контекста, сложности и предпочтений.
+      operationId: getRiddle
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/XCorrelationId"
+        - $ref: "#/components/parameters/StampTime"
+        - $ref: "#/components/parameters/Channel"
+        - $ref: "#/components/parameters/Device"
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Категория загадки
+        - in: query
+          name: difficulty
+          schema:
+            type: string
+          description: Желаемая сложность
+        - in: query
+          name: context
+          schema:
+            type: string
+          description: Контекст пользователя (например, возрастная группа или интересы)
+      responses:
+        "200":
+          description: Загадка успешно подобрана, сессия создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetRiddleResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    post:
+      tags:
+        - Management
+      summary: Добавить загадку в каталог
+      description: |
+        Добавление новой загадки в каталог.
+        **Требуется роль:** `RIDDLE_EDITOR`.
+      operationId: createRiddle
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/XCorrelationId"
+        - $ref: "#/components/parameters/StampTime"
+        - $ref: "#/components/parameters/Channel"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRiddleRequest"
+      responses:
+        "200":
+          description: Загадка успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateRiddleResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /v1/riddles/search:
+    get:
+      tags:
+        - Management
+      summary: Поиск и листинг загадок
+      description: |
+        Получение списка загадок с фильтрацией и пагинацией для административного UI.
+        **Требуется роль:** `RIDDLE_EDITOR`.
+      operationId: searchRiddles
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XRequestId"
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: difficulty
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Список загадок успешно получен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchRiddlesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /v1/riddle/{riddleId}:
+    put:
+      tags:
+        - Management
+      summary: Обновить существующую загадку
+      description: |
+        Обновление полей существующей загадки.
+        **Требуется роль:** `RIDDLE_EDITOR`.
+      operationId: updateRiddle
+      parameters:
+        - $ref: "#/components/parameters/RiddleIdPath"
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRiddleRequest"
+      responses:
+        "200":
+          description: Загадка успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Management
+      summary: Удалить загадку
+      description: |
+        Логическое или физическое удаление загадки из каталога.
+        **Требуется роль:** `RIDDLE_ADMIN`.
+      operationId: deleteRiddle
+      parameters:
+        - $ref: "#/components/parameters/RiddleIdPath"
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XRequestId"
+      responses:
+        "200":
+          description: Загадка успешно удалена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /v1/riddle/{riddleId}/answer:
+    post:
+      tags:
+        - Process
+      summary: Верифицировать ответ пользователя
+      description: |
+        Верифицирует ответ пользователя в рамках активной сессии. Возвращает вердикт
+        (CORRECT, WRONG, FAILED) и опциональные подсказки, если ответ неверен.
+      operationId: submitAnswer
+      parameters:
+        - $ref: "#/components/parameters/RiddleIdPath"
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XRequestId"
+        - $ref: "#/components/parameters/XCorrelationId"
+        - $ref: "#/components/parameters/StampTime"
+        - $ref: "#/components/parameters/Channel"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAnswerRequest"
+      responses:
+        "200":
+          description: Ответ успешно обработан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitAnswerResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "410":
+          $ref: "#/components/responses/Gone"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Токен авторизации (IAM / Keycloak / AD)
+
+  parameters:
+    RiddleIdPath:
+      name: riddleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Уникальный идентификатор загадки
+
+    XUserId:
+      name: x-user-id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Уникальный идентификатор пользователя (Actor)
+
+    XRequestId:
+      name: x-request-id
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Идентификатор текущего запроса для трассировки идемпотентности
+
+    XCorrelationId:
+      name: x-correlation-id
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Идентификатор цепочки вызовов (Trace ID)
+
+    StampTime:
+      name: stamp-time
+      in: header
+      required: true
+      schema:
+        type: string
+        format: date-time
+      description: Временная метка отправки запроса клиентом (ISO 8601)
+
+    Channel:
+      name: channel
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Канал поступления запроса (например, WEB, MOBILE, KIOSK)
+
+    Device:
+      name: device
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Идентификатор или тип устройства клиента
+
+  schemas:
+    BaseResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: Код результата (0 - успешно, остальные - ошибки бизнес-логики или валидации)
+          example: 0
+        message:
+          type: string
+          description: Человекочитаемое описание статуса выполнения операции
+          example: "OK"
+
+    GetRiddleResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - riddleId
+                - category
+                - difficulty
+                - context
+              properties:
+                riddleId:
+                  type: string
+                  format: uuid
+                category:
+                  type: string
+                difficulty:
+                  type: string
+                context:
+                  type: string
+              description: "Структурированная полезная нагрузка (может сериализоваться как JSON-строка, сохраняя строгую типизацию)"
+
+    SearchRiddlesResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  riddleId:
+                    type: string
+                    format: uuid
+                  category:
+                    type: string
+                  difficulty:
+                    type: string
+                  question:
+                    type: string
+
+    SubmitAnswerRequest:
+      type: object
+      required:
+        - answer
+      properties:
+        answer:
+          type: string
+          example: "И"
+          description: Ответ пользователя на загадку
+
+    SubmitAnswerResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - verdict
+              properties:
+                verdict:
+                  type: string
+                  enum: [CORRECT, WRONG, FAILED]
+                  description: Результат проверки
+                hint:
+                  type: string
+                  description: Подсказка, если ответ неверен
+                revealAnswer:
+                  type: string
+                  description: Правильный ответ, если попытки исчерпаны
+
+    CreateRiddleRequest:
+      type: object
+      required:
+        - category
+        - difficulty
+        - context
+        - question
+        - answer
+      properties:
+        category:
+          type: string
+          example: "Логика"
+        difficulty:
+          type: string
+          example: "Средняя"
+        context:
+          type: string
+          example: "Для детей"
+        question:
+          type: string
+          example: "А, И, Б сидели на трубе..."
+        answer:
+          type: string
+          example: "И"
+
+    CreateRiddleResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - riddleId
+              properties:
+                riddleId:
+                  type: string
+                  format: uuid
+
+    UpdateRiddleRequest:
+      type: object
+      properties:
+        category:
+          type: string
+        difficulty:
+          type: string
+        context:
+          type: string
+        question:
+          type: string
+        answer:
+          type: string
+      description: Все поля опциональны, обновляются только переданные
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Ошибка валидации запроса (Base validate request)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: 100
+            message: "Invalid request"
+
+    Unauthorized:
+      description: Неавторизованный запрос (токен отсутствует, истек или невалиден)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: 401
+            message: "Unauthorized"
+
+    Forbidden:
+      description: Отказ в доступе (недостаточно прав в ролевой матрице, например нет RIDDLE_EDITOR / RIDDLE_ADMIN)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: 403
+            message: "Forbidden"
+
+    NotFound:
+      description: Сущность не найдена (загадка отсутствует в каталоге)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: 404
+            message: "Not Found"
+
+    Gone:
+      description: Сессия отгадывания истекла, исчерпана или не существует
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: 410
+            message: "Session Expired or Not Found"
+
+    TooManyRequests:
+      description: Превышены лимиты или бизнес-правила (Rate limits)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: 429
+            message: "Too Many Requests"
+
+    InternalServerError:
+      description: Внутренняя ошибка сервиса (ошибка БД, IAM, и т.д.)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: 500
+            message: "Internal Server Error"

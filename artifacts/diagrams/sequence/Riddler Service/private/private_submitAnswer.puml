@@ -1,0 +1,62 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Sub-flow: private.submitAnswer")
+    $SM($MUTED("Верификация ответа и управление сессией"))
+end title
+
+box "Riddle Service" $BG_INFO
+    participant "Riddle Service" as riddler
+    participant "Evaluator" as evaluator
+end box
+
+box "Data" $BG_CFG
+    database "Session Store\n(Redis)" as session
+    database "Riddle Catalog\n(PostgreSQL)" as catalog
+end box
+
+riddler -> riddler : private.submitAnswer(riddleId, x-user-id, answer)
+activate riddler
+
+    riddler -> session : getSession(riddleId, x-user-id)
+    activate session
+        session --> riddler : sessionData | notFound
+    deactivate session
+
+    break $BG_CRIT sessionData == notFound OR expired
+        riddler --> riddler : EvaluateResponse(sessionNotFound)
+    end break
+
+    riddler -> catalog : getAnswer(riddleId)
+    activate catalog
+        catalog --> riddler : correctAnswer
+    deactivate catalog
+
+    riddler -> evaluator : evaluate(answer, correctAnswer)
+    activate evaluator
+        evaluator --> riddler : verdict (CORRECT | WRONG)
+    deactivate evaluator
+
+    alt#$FR_SUCC_HEAD #$FR_SUCC_BG verdict == CORRECT
+        riddler -> session : deleteSession(riddleId, x-user-id)
+    else #$FR_ERR_BG verdict == WRONG
+        riddler -> session : incrementAttempts(riddleId, x-user-id)
+        activate session
+            session --> riddler : attemptsCount
+        deactivate session
+        
+        opt#$FR_WARN_HEAD #$FR_WARN_BG attemptsCount >= MAX_ATTEMPTS
+            riddler -> riddler : verdict = FAILED
+            riddler -> session : deleteSession(riddleId, x-user-id)
+        end
+    end
+
+    riddler --> riddler : EvaluateResponse(verdict)
+deactivate riddler
+
+SEQ_LEGEND_STATUS()
+@enduml

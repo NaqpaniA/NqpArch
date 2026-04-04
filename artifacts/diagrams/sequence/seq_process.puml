@@ -1,0 +1,63 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Загадка: кто остался на трубе")
+    $SM($MUTED("Sequence example / восстановление состояния по условиям загадки"))
+end title
+
+footer $SM($MUTED("Одна загадка = одна диаграмма"))
+
+box "Реальный мир" $BG_INFO
+    actor "Загадывающий" as riddler
+    actor "Отгадывающий" as solver
+end box
+
+box "Загадка" $BG_WARN
+    participant "А" as a <<P_RM>>
+    participant "И" as i
+    participant "Б" as b <<P_RM>>
+    queue "Труба" as pipe
+end box
+
+== Исходное состояние ==
+activate riddler
+    riddler -> solver : А, И, Б сидели на трубе
+    activate solver
+        activate a
+            a -> pipe : Сидит
+            activate pipe
+        activate i
+            i -> pipe : Сидит
+        activate b
+            b -> pipe : Сидит
+
+
+== События ==
+    riddler -> solver : А упала, Б пропала
+    group#$FR_CRIT_HEAD #$FR_CRIT_BG Состав участников меняется
+        a [$C_DEL]--> a : Упала
+        destroy a
+
+        b [$C_DEL]--> b : Пропала
+        destroy b
+        deactivate i
+        deactivate pipe
+    end
+
+== Вопрос / Ответ ==
+    riddler -> solver : Кто остался на трубе?
+    note right
+        Восстанавливает состояние
+        по условиям загадки
+    end note
+        solver --> riddler : И
+    deactivate solver
+deactivate riddler
+
+
+SEQ_LEGEND_STATUS()
+@enduml

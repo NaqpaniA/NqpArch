@@ -1,0 +1,37 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Sub-flow: private.createRiddle")
+    $SM($MUTED("Создание новой загадки в каталоге"))
+end title
+
+box "Riddle Service" $BG_INFO
+    participant "Riddle Service" as riddler
+end box
+
+box "Data" $BG_CFG
+    database "Riddle Catalog" as catalog
+end box
+
+riddler -> riddler : private.createRiddle(body)
+activate riddler
+
+    riddler -> riddler : generate riddleId (UUID)
+
+    riddler -> catalog : insert(riddleId, body) \n[Unique Constraint: question]
+    activate catalog
+        catalog --> riddler : success | constraintViolation | error
+    deactivate catalog
+
+    break $BG_CRIT catalog == error OR constraintViolation
+        riddler --> riddler : CreateRiddleResponse(error | invalid, "Duplicate/DB error")
+    end break
+
+    riddler --> riddler : CreateRiddleResponse(riddleId)
+deactivate riddler
+SEQ_LEGEND_STATUS()
+@enduml

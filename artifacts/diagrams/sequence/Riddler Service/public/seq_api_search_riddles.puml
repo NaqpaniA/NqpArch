@@ -1,0 +1,66 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Управление каталогом: Поиск и листинг загадок (GET /v1/riddles/search)")
+    $SM($MUTED("Самостоятельный архитектурный артефакт"))
+    $SM($MUTED("[[../Contracts/sync-riddler-service-api.yaml OpenAPI Contract]]"))
+end title
+
+footer $SM($MUTED("1 public method = 1 sequence diagram"))
+
+box "API: GET /v1/riddles/search" $BG_INFO
+    actor "Actor" as actor
+    participant "Riddle Service" as riddler
+end box
+
+box "Data" $BG_CFG
+    database "Riddle Catalog\n(PostgreSQL)" as catalog
+end box
+
+activate actor
+    actor -> riddler : <<GET>> /v1/riddles/search(query): SearchRiddlesResponse
+    activate riddler
+        riddler -> riddler: base validate request(types, formats)
+        break $BG_CRIT ValidateResponse==invalid
+            riddler --> actor: <<HTTP: 400>> Error Response
+        end break
+
+        riddler -> riddler: <<sub-flow>> private.validateRequest\n(method:"GET/v1/riddles/search", headers): ValidateResponse
+        ref over riddler
+            $B("[[private_validateRequest.puml private.validateRequest]]")
+            $B("headers, token, etc.")
+
+            Проверка роли RIDDLE_EDITOR.
+        end ref
+
+        break $BG_CRIT ValidateResponse==unauthorized
+            riddler --> actor: <<HTTP:401>> Unauthorized
+        else $BG_CRIT ValidateResponse==forbidden
+            riddler --> actor: <<HTTP:403>> Forbidden
+        else $BG_CRIT ValidateResponse==error
+            riddler --> actor: <<HTTP:500>> Internal Server Error
+        end
+
+        riddler -> riddler: <<sub-flow>> private.searchRiddles\n(category, difficulty, limit, offset): SearchRiddlesResponse
+        ref over riddler
+            $B("[[private_searchRiddles.puml private.searchRiddles]]")
+            $B("filters, pagination")
+
+            Поиск загадок в каталоге с учетом фильтров.
+        end ref
+
+        break $BG_CRIT SearchRiddlesResponse == error
+            riddler --> actor: <<HTTP: 500>> Internal Server Error
+        end break
+
+        riddler --> actor: <<HTTP: 200>> SearchRiddlesResponse: (code: 0, data: [...])
+
+    deactivate riddler
+deactivate actor
+
+SEQ_LEGEND_STATUS()
+@enduml

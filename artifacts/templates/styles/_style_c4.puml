@@ -2,7 +2,7 @@
 !theme plain
 
 ' --- Layout ---
-skinparam shadowing false
+skinparam shadowing true
 skinparam linetype ortho
 skinparam dpi 160
 skinparam nodesep 70
@@ -108,4 +108,53 @@ legend bottom right
   |<#2962FF> | edit |
   |<#D50000> | delete |
 endlegend
+!endprocedure
+
+' --- Compatibility layer for the canonical C4 API ---
+!procedure $C4_TITLE_WITH_SUBTITLE($TITLE, $SUBTITLE)
+title <b>$TITLE</b>\n<color:#546E7A>$SUBTITLE</color>
+!endprocedure
+
+!procedure $C4_LEGEND_STATUS_BOTTOM_RIGHT()
+$LEGEND_STATUS_C4()
+!endprocedure
+
+!procedure $C4_BOUNDARY_SOLUTION_BEGIN($TITLE)
+package "$TITLE" {
+!endprocedure
+
+!procedure $C4_BOUNDARY_DOMAIN_BEGIN($TITLE)
+package "$TITLE" {
+!endprocedure
+
+!procedure $C4_BOUNDARY_EXTERNAL_BEGIN($TITLE)
+package "$TITLE" <<External>> {
+!endprocedure
+
+!procedure $C4_BOUNDARY_END()
+}
+!endprocedure
+
+!procedure $C4_SYNC_NEW($from, $to, $label)
+$SYNC_NEW($from, $to, $label)
+!endprocedure
+
+!procedure $C4_SYNC_CHG($from, $to, $label)
+$SYNC_CHG($from, $to, $label)
+!endprocedure
+
+!procedure $C4_SYNC_DEL($from, $to, $label)
+$SYNC_DEL($from, $to, $label)
+!endprocedure
+
+!procedure $C4_ASYNC_NEW($from, $to, $label)
+$ASYNC_NEW($from, $to, $label)
+!endprocedure
+
+!procedure $C4_ASYNC_CHG($from, $to, $label)
+$ASYNC_CHG($from, $to, $label)
+!endprocedure
+
+!procedure $C4_ASYNC_DEL($from, $to, $label)
+$ASYNC_DEL($from, $to, $label)
 !endprocedure

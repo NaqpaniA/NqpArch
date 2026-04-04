@@ -1,0 +1,46 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Sub-flow: private.deleteRiddle")
+    $SM($MUTED("Логическое или физическое удаление загадки"))
+end title
+
+box "Riddle Service" $BG_INFO
+    participant "Riddle Service" as riddler
+end box
+
+box "Data" $BG_CFG
+    database "Riddle Catalog" as catalog
+end box
+
+riddler -> riddler : private.deleteRiddle(riddleId)
+activate riddler
+
+    riddler -> catalog : findById(riddleId)
+    activate catalog
+        catalog --> riddler : riddleData | null | error
+    deactivate catalog
+
+    break $BG_CRIT catalog == error OR riddleData == null
+        riddler --> riddler : DeleteRiddleResponse(error | notFound)
+    end break
+
+    riddler -> catalog : delete(riddleId) / markAsDeleted(riddleId)
+    activate catalog
+        catalog --> riddler : success | error
+    deactivate catalog
+
+    break $BG_CRIT catalog == error
+        riddler --> riddler : DeleteRiddleResponse(error)
+    end break
+
+    riddler --> riddler : DeleteRiddleResponse(OK)
+
+deactivate riddler
+
+SEQ_LEGEND_STATUS()
+@enduml

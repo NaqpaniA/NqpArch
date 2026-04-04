@@ -1,225 +1,202 @@
-# PlantUML Diagram Styles
+# Canonical PlantUML diagram styles
 
-Базовый набор стилей для архитектурных диаграмм в PlantUML.
+## Что это
 
-## Файлы
-
-- `_style_seq_canonical.puml` — базовый стиль для sequence diagrams.
+- `_style_seq_canonical.puml` — базовый стиль для sequence diagram.
 - `_style_c4_canonical.puml` — базовый стиль для C4-like диаграмм.
+- `sequence_template_canonical.puml` — чистый шаблон sequence.
+- `seq_riddle_a_i_b_on_pipe.puml` — пример sequence на загадке «А, И, Б сидели на трубе».
 
-## Зачем это нужно
+Все макросы вызываются **с символом `$`**.
 
-- единый визуальный стиль для команды;
-- меньше ручной покраски и копипасты;
-- повторно используемые макросы для типовых сценариев;
-- понятная семантика изменений: new / changed / removed / config / legacy;
-- более читаемые диаграммы без лишнего визуального шума.
+---
 
-## Sequence style: что есть
+## Sequence: что умеет
 
-### Базовое оформление
+- единая типографика и skinparam baseline;
+- generic-слои: `User`, `API`, `Core`, `Integration`, `Data`, `External`, `Configuration`, `Ops`;
+- participant tags:
+  - `<<p_new>>`
+  - `<<p_chg>>`
+  - `<<p_rm>>`
+  - `<<p_legacy>>`
+  - `<<p_cfg>>`
+  - `<<p_ext>>`
+- stereotypes are visible, so you can combine status tags with semantic labels:
+  - `<<p_chg>> <<HTTP>>`
+  - `<<p_ext>> <<Kafka>>`
+  - `<<p_chg>> <<202 Accepted>>`
+- макросы для стрелок:
+  - sync request
+  - async message
+  - response `default / ok / warn / err`
+- макросы для fragment-ов:
+  - `alt / else / opt / loop / par / break / critical / group`
+  - пресеты `info / warn / crit`
+- секции, задержки и notes;
+- встроенные legend-блоки.
 
-- единая типографика;
-- выровненные отступы и читаемые подписи;
-- `responseMessageBelowArrow`;
-- скрытый footbox;
-- нейтральная базовая палитра.
+### Sequence: text tags
 
-### Семантические теги участников
+Идея простая:
 
-Можно помечать участников через stereotypes:
+- контейнеры остаются нативными: `title`, `header`, `footer`, `note`;
+- оформление текста задаётся тегами;
+- теги свободно вкладываются друг в друга.
 
-- `<<p_new>>` — новый компонент;
-- `<<p_chg>>` — изменённый компонент;
-- `<<p_rm>>` — удаляемый компонент;
-- `<<p_legacy>>` — legacy;
-- `<<p_cfg>>` — конфиг / policy / rules source;
-- `<<p_ext>>` — внешний контур / партнёр.
+Базовые теги:
 
-### Слои
+- `$B("text")` — bold
+- `$I("text")` — italic
+- `$FONT("DejaVu Sans Mono", "text")` — font family
+- `$SIZE("12", "text")` — arbitrary size
 
-Есть готовые макросы для логической группировки участников:
+Упрощённые size-теги:
 
-- `SEQ_LAYER_USER_BEGIN()`
-- `SEQ_LAYER_API_BEGIN()`
-- `SEQ_LAYER_CORE_BEGIN()`
-- `SEQ_LAYER_INT_BEGIN()`
-- `SEQ_LAYER_DATA_BEGIN()`
-- `SEQ_LAYER_EXT_BEGIN()`
-- `SEQ_LAYER_CFG_BEGIN()`
-- `SEQ_LAYER_OPS_BEGIN()`
-- `SEQ_LAYER_CUSTOM_BEGIN("...")`
-- `SEQ_LAYER_END()`
+- `$XS("text")`
+- `$SM("text")`
+- `$LG("text")`
+- `$XL("text")`
 
-### Макросы сообщений
+Семантические color-теги:
 
-Есть готовые макросы для стрелок, чтобы не красить их руками:
+- `$MUTED("text")`
+- `$INFO("text")`
+- `$WARN("text")`
+- `$CRIT("text")`
+- `$NEW("text")`
+- `$CHG("text")`
+- `$DEL("text")`
+- `$CFG("text")`
 
-- sync request;
-- async request;
-- response;
-- статусные варианты для `new / changed / removed / config / legacy`.
+Дополнительно:
 
-### Фрагменты и акценты
+- `$MONO("text")` — моноширинный текст
 
-Есть макросы для акцентных блоков:
+Пример:
 
-- `info`;
-- `warn`;
-- `crit`.
+```puml
+title
+    $B("Order creation")
+    $SM($MUTED("Public operation / happy path"))
+end title
 
-Их удобно использовать для:
+footer $SM($MUTED("One process = one diagram"))
 
-- retry / timeout;
-- degradation / fallback;
-- идемпотентности;
-- денежных и необратимых операций;
-- ограничений и допущений.
+note right
+    $MONO($WARN("payload"))
+end note
+```
 
-### Заголовки и легенды
-
-Есть готовые хелперы для:
-
-- заголовка диаграммы;
-- полной легенды;
-- сокращённой легенды.
-
-## C4-like style: что есть
-
-### Базовое оформление
-
-- единая типографика;
-- ortho-линии;
-- нейтральный baseline для context / container / component views;
-- аккуратные package / boundary / node styles.
-
-### Стереотипы узлов
-
-Поддерживаются базовые stereotypes:
-
-- `<<Service>>`
-- `<<Database>>`
-- `<<Broker>>`
-- `<<External>>`
-- `<<Legacy>>`
-- `<<Config>>`
-- `<<Anchor>>`
-
-### Границы
-
-Есть готовые boundary stereotypes:
-
-- `<<SolutionBoundary>>`
-- `<<DomainBoundary>>`
-- `<<ExternalBoundary>>`
-
-И макросы для их открытия:
-
-- `C4_BOUNDARY_SOLUTION_BEGIN("...")`
-- `C4_BOUNDARY_DOMAIN_BEGIN("...")`
-- `C4_BOUNDARY_EXTERNAL_BEGIN("...")`
-- `C4_BOUNDARY_END()`
-
-### Макросы связей
-
-Есть готовые relation helpers:
-
-- sync / async;
-- `new / changed / removed / config / legacy`.
-
-Это позволяет:
-
-- одинаково показывать change semantics;
-- не размазывать произвольные цвета по диаграмме;
-- держать единый стиль между разными авторами.
-
-### Заголовки и легенды
-
-Есть хелперы для:
-
-- заголовка;
-- заголовка с подзаголовком;
-- легенды статусов.
-
-## Как подключать
-
-### Sequence
+### Sequence: базовое подключение
 
 ```puml
 @startuml
 !pragma teoz true
 !include _style_seq_canonical.puml
 
-SEQ_TITLE("Order creation")
-SEQ_LEGEND_FULL_TOP_RIGHT()
+$SEQ_TITLE($B("Order creation"))
+$SEQ_SUBTITLE($SM($MUTED("Public operation / happy path")))
+$SEQ_LEGEND_FULL_TOP_RIGHT()
+$SEQ_FOOTER_NOTE("One process = one diagram")
 
-SEQ_LAYER_USER_BEGIN()
+$SEQ_LAYER_USER_BEGIN()
     actor Client
-SEQ_LAYER_END()
+$SEQ_LAYER_END()
 
-SEQ_LAYER_API_BEGIN()
-    boundary API <<p_chg>>
-SEQ_LAYER_END()
+$SEQ_LAYER_API_BEGIN()
+    boundary API <<p_chg>> <<HTTP>>
+$SEQ_LAYER_END()
 
-SEQ_LAYER_CORE_BEGIN()
-    control OrderService <<p_new>>
-SEQ_LAYER_END()
+$SEQ_LAYER_CORE_BEGIN()
+    control OrderService <<p_new>> <<Application>>
+$SEQ_LAYER_END()
 
-SEQ_REQ_CHG(Client, API, "POST /orders")
-SEQ_REQ_NEW(API, OrderService, "createOrder()")
-SEQ_RESP_OK(OrderService, API, "orderId")
-SEQ_RESP_OK(API, Client, "202 Accepted")
+$SEQ_REQ_CHG(Client, API, "POST /orders")
+$SEQ_REQ_NEW(API, OrderService, "createOrder()")
+$SEQ_RESP(OrderService, API, "orderId")
+$SEQ_RESP(API, Client, "202 Accepted")
 @enduml
 ```
 
-### C4-like
+### Sequence: arrows and fragments
+
+Если нужен полный контроль, используем нативный PlantUML, а цвета берём из style-переменных.
+
+Стрелки:
+
+- `a -[$C_CHG]-> b : changed sync`
+- `a -[$C_NEW]>> b : new async`
+- `a --[$C_NEW]> b : ok response`
+- `a -[$C_DEL]-> b : removed / delete / drop`
+
+Фрагменты:
+
+- `group#$FR_WARN_HEAD #$FR_WARN_BG Validation`
+- `group#$FR_CRIT_HEAD #$FR_CRIT_BG Hard stop`
+- `alt#$FR_INFO_HEAD #$FR_INFO_BG Main path`
+- `opt#$FR_WARN_HEAD #$FR_WARN_BG Fallback`
+
+Пример:
+
+```puml
+== Validation ==
+group#$FR_WARN_HEAD #$FR_WARN_BG Validation warnings
+    API -[$C_CHG]-> Service : validate()
+    Service --[$C_NEW]> API : ok
+end
+```
+
+### Sequence: guideline
+
+- контейнеры лучше оставлять нативными;
+- текст лучше стилизовать тегами, а не raw HTML;
+- стрелки лучше рисовать руками, если нужен точный контроль формы;
+- semantic helpers полезны как тонкий слой стандарта, а не как новая нотация поверх PlantUML.
+
+---
+
+## C4-like: что умеет
+
+- нейтральный baseline для context / container / component views;
+- boundary helpers:
+  - solution
+  - domain
+  - external
+- relation helpers:
+  - sync / async
+  - `new / changed / removed / config / legacy`
+- notes и legend-блоки;
+- нейтральная семантическая палитра без проектной грязи.
+
+### C4-like: базовое подключение
 
 ```puml
 @startuml
 !include _style_c4_canonical.puml
 
-C4_TITLE_WITH_SUBTITLE("Order flow", "Container view")
-C4_LEGEND_STATUS_BOTTOM_RIGHT()
+$C4_TITLE_WITH_SUBTITLE("Order flow", "Container view")
+$C4_LEGEND_STATUS_BOTTOM_RIGHT()
 
-C4_BOUNDARY_SOLUTION_BEGIN("Order solution")
+$C4_BOUNDARY_SOLUTION_BEGIN("Order solution")
     rectangle API as api <<Service>>
     rectangle Core as core <<Service>>
     database DB as db <<Database>>
-C4_BOUNDARY_END()
+$C4_BOUNDARY_END()
 
 rectangle Partner as ext <<External>>
 
-C4_SYNC_CHG(api, core, "createOrder()")
-C4_SYNC_NEW(core, db, "persist")
-C4_ASYNC_NEW(core, ext, "event")
+$C4_SYNC_CHG(api, core, "createOrder()")
+$C4_SYNC_NEW(core, db, "persist")
+$C4_ASYNC_NEW(core, ext, "event")
 @enduml
 ```
 
-## Правила использования
+---
 
-- не красить стрелки и элементы руками, если для этого уже есть макрос;
-- один уровень абстракции на диаграмму;
-- один публичный сценарий или одна операция на один sequence;
-- status colors использовать как семантику изменения, а не как украшение;
-- проектные расширения делать отдельным style-файлом поверх canonical base.
+## Как использовать в команде
 
-## Рекомендуемая структура
-
-```text
-/docs/styles/_style_seq_canonical.puml
-/docs/styles/_style_c4_canonical.puml
-```
-
-## Расширение под проект
-
-Если нужен доменный цвет, дополнительные stereotypes или специальные legend items:
-
-- не менять canonical-файл под один проект;
-- делать отдельную надстройку, например:
-
-```text
-/docs/styles/project/_style_seq_project.puml
-/docs/styles/project/_style_c4_project.puml
-```
-
-И уже в ней подключать canonical base и добавлять локальные расширения.
+- не красить стрелки и связи руками;
+- держать project-specific палитру в отдельных thin-wrapper style-файлах;
+- использовать canonical styles как общий baseline;
+- для sequence придерживаться правила: **1 публичная операция = 1 диаграмма**.

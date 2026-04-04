@@ -1,0 +1,81 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Загадывание любой загадки: Проверка ответа (POST /v1/riddle/{riddleId}/answer)")
+    $SM($MUTED("Самостоятельный архитектурный артефакт"))
+    $SM($MUTED("[[../Contracts/sync-riddler-service-api.yaml OpenAPI Contract]]"))
+end title
+
+footer $SM($MUTED("1 public method = 1 sequence diagram"))
+
+box "API: POST /v1/riddle/{riddleId}/answer" $BG_INFO
+    actor "Actor" as actor
+    participant "Riddle Service" as riddler
+end box
+
+box "Messaging" $BG_WARN
+    queue "Event Broker\n(Kafka / RMQ)" as broker
+end box
+
+box "Data" $BG_CFG
+    database "Idempotency Cache\n(Redis)" as redis
+end box
+
+activate actor
+    actor -> riddler : <<POST>> /v1/riddle/{riddleId}/answer(headers, body): SubmitAnswerResponse
+    activate riddler
+        riddler -> riddler: base validate request(requirement parameters, types)
+        break $BG_CRIT ValidateResponse==invalid
+            riddler --> actor: <<HTTP: 400>> RiddlerResponse: (code: 100, message: "Invalid request")
+        end break
+
+        riddler -> riddler: <<sub-flow>> private.validateRequest\n(method:"POST/v1/riddle/{riddleId}/answer", request: {}, headers: {}): ValidateResponse
+        ref over riddler
+            $B("[[private_validateRequest.puml private.validateRequest]]")
+            $B("method, headers, token, etc.")
+
+            Базовая проверка прав доступа. Гарантирует,
+            что пользователь имеет необходимые
+            разрешения для участия в процессе.
+        end ref
+
+        break $BG_CRIT ValidateResponse==unauthorized
+            riddler --> actor: <<HTTP:401>> Unauthorized
+        else $BG_CRIT ValidateResponse==forbidden
+            riddler --> actor: <<HTTP:403>> Forbidden
+        else $BG_CRIT ValidateResponse==error
+            riddler --> actor: <<HTTP:500>> Internal Server Error
+        end
+
+        riddler -> riddler: <<sub-flow>> private.submitAnswer\n(riddleId, x-user-id, answer): EvaluateResponse
+        ref over riddler
+            $B("[[private_submitAnswer.puml private.submitAnswer]]")
+            $B("riddleId, x-user-id, answer")
+
+            Верификация активной сессии, запуск
+            процесса оценки ответа (Evaluator)
+            и инкремент счетчика попыток в БД.
+        end ref
+
+        break $BG_CRIT EvaluateResponse==sessionNotFound
+            riddler --> actor: <<HTTP: 410>> RiddleResponse: (code: 410, message: "Session Expired or Not Found")
+        else $BG_CRIT EvaluateResponse==error
+            riddler --> actor: <<HTTP: 500>> Internal Server Error
+        end break
+
+        opt#$FR_INFO_HEAD #$FR_INFO_BG Асинхронная публикация доменного события
+            riddler -[$C_NEW]>> broker : <<fire-and-forget>> \nEvent: RiddleAnswered(riddleId, verdict)
+        end
+
+        riddler -> redis : saveResponse(headers.x-request-id, RiddleResponse)
+        riddler --> actor: <<HTTP: 200>> RiddleResponse: (code: 0, message: "OK", data: "{verdict, hint, revealAnswer}")
+
+    deactivate riddler
+deactivate actor
+
+SEQ_LEGEND_STATUS()
+@enduml

@@ -1,0 +1,66 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Управление загадками: Обновление (PUT /v1/riddle/{riddleId})")
+    $SM($MUTED("Самостоятельный архитектурный артефакт"))
+    $SM($MUTED("[[../Contracts/sync-riddler-service-api.yaml OpenAPI Contract]]"))
+end title
+
+footer $SM($MUTED("1 public method = 1 sequence diagram"))
+
+box "API: PUT /v1/riddle" $BG_INFO
+    actor "Actor" as actor
+    participant "Riddle Service" as riddler
+end box
+
+activate actor
+    actor -> riddler : <<PUT>> /v1/riddle/{riddleId}(headers, body): RiddleResponse
+    activate riddler
+        riddler -> riddler: base validate request(requirement parameters, types)
+        break $BG_CRIT ValidateResponse==invalid
+            riddler --> actor: <<HTTP: 400>> RiddlerResponse: (code: 100, message: "Invalid request")
+        end break
+
+        riddler -> riddler: <<sub-flow>> private.validateRequest\n(method:"PUT/v1/riddle", request: {}, headers: {}): ValidateResponse
+        ref over riddler
+            $B("[[private_validateRequest.puml private.validateRequest]]")
+            $B("method, headers, token, etc.")
+
+            Помимо базовой аутентификации, метод строго
+            требует наличия профильной роли (например,
+            RIDDLE_EDITOR) для модификации каталога.
+        end ref
+
+        break $BG_CRIT ValidateResponse==unauthorized
+            riddler --> actor: <<HTTP:401>> Unauthorized
+        else $BG_CRIT ValidateResponse==forbidden
+            riddler --> actor: <<HTTP:403>> Forbidden
+        else $BG_CRIT ValidateResponse==error
+            riddler --> actor: <<HTTP:500>> Internal Server Error
+        end
+
+        riddler -> riddler: <<sub-flow>> private.updateRiddle\n(riddleId, body): UpdateRiddleResponse
+        ref over riddler
+            $B("[[private_updateRiddle.puml private.updateRiddle]]")
+            $B("riddleId, body")
+
+            Поиск сущности по идентификатору и атомарное
+            обновление переданных атрибутов в каталоге.
+        end ref
+        break $BG_CRIT UpdateRiddleResponse==notFound
+            riddler --> actor: <<HTTP: 404>> RiddleResponse: (code: 404, message: "Not Found")
+        else $BG_CRIT UpdateRiddleResponse==error
+            riddler --> actor: <<HTTP: 500>> Internal Server Error
+        end break
+
+        riddler --> actor: <<HTTP: 200>> RiddleResponse: (code: 0, message: "OK")
+
+    deactivate riddler
+deactivate actor
+
+SEQ_LEGEND_STATUS()
+@enduml

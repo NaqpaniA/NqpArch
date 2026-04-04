@@ -1,0 +1,77 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Управление загадками: Создание (POST /v1/riddle)")
+    $SM($MUTED("Самостоятельный архитектурный артефакт"))
+    $SM($MUTED("[[../Contracts/sync-riddler-service-api.yaml OpenAPI Contract]]"))
+end title
+
+footer $SM($MUTED("1 public method = 1 sequence diagram"))
+
+box "API: POST /v1/riddle" $BG_INFO
+    actor "Actor" as actor
+    participant "Riddle Service" as riddler
+end box
+
+box "Data" $BG_CFG
+    database "Idempotency Cache\n(Redis)" as redis
+end box
+
+activate actor
+    actor -> riddler : <<POST>> /v1/riddle(headers, body): RiddleResponse
+    activate riddler
+        riddler -> riddler: base validate request(requirement parameters, types)
+        break $BG_CRIT ValidateResponse==invalid
+            riddler --> actor: <<HTTP: 400>> RiddlerResponse: (code: 100, message: "Invalid request")
+        end break
+
+        riddler -> riddler: <<sub-flow>> private.validateRequest\n(method:"POST/v1/riddle", request: {}, headers: {}): ValidateResponse
+        ref over riddler
+            $B("[[private_validateRequest.puml private.validateRequest]]")
+            $B("method, headers, token, etc.")
+
+            Помимо базовой аутентификации, метод строго
+            требует наличия профильной роли (например,
+            RIDDLE_EDITOR) для модификации каталога.
+        end ref
+
+        break $BG_CRIT ValidateResponse != valid
+            riddler --> actor: <<HTTP: 401 / 403 / 500>> Error Response
+        end break
+
+        opt#$FR_INFO_HEAD #$FR_INFO_BG Проверка идемпотентности (x-request-id)
+            riddler -> redis : checkAndAcquireLock(headers.x-request-id)
+            activate redis
+                redis --> riddler : locked | exists(cachedResponse) | error
+            deactivate redis
+            break $BG_CRIT redis == exists
+                riddler --> actor: <<HTTP: 200 / 4xx>> cachedResponse
+            else $BG_CRIT redis == error
+                riddler --> actor: <<HTTP: 500>> Internal Server Error
+            end break
+        end
+
+        riddler -> riddler: <<sub-flow>> private.createRiddle\n(body): CreateRiddleResponse
+        ref over riddler
+            $B("[[private_createRiddle.puml private.createRiddle]]")
+            $B("category, difficulty, context, question, answer")
+
+            Генерация суррогатного ключа, проверка на
+            отсутствие дубликатов и персистентное сохранение.
+        end ref
+        break $BG_CRIT CreateRiddleResponse==error
+            riddler --> actor: <<HTTP: 500>> Internal Server Error
+        end break
+
+        riddler -> redis : saveResponse(headers.x-request-id, RiddleResponse)
+        riddler --> actor: <<HTTP: 200>> RiddleResponse: (code: 0, message: "OK", data: "{riddleId}")
+
+    deactivate riddler
+deactivate actor
+
+SEQ_LEGEND_STATUS()
+@enduml

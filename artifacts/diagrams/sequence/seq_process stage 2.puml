@@ -1,0 +1,220 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Загадывание любой загадки: stage 2")
+    $SM($MUTED("Sequence / инициирование, подбор, сессия, ответ и edge-сценарии"))
+end title
+
+footer $SM($MUTED("Одна публичная операция = один e2e-процесс загадывания"))
+
+box "Клиентский контур" $BG_INFO
+    actor "Отгадывающий" as solver
+    boundary "Канал / UI" as ui
+end box
+
+box "Система загадок" $BG_WARN
+    boundary "Riddle API" as api
+    control "Загадывающий" as riddler
+    control "Context Resolver" as ctx
+    control "Answer Evaluator" as evaluator
+end box
+
+box "Данные и правила" $BG_CFG
+    entity "Rules / Policy" as rules
+    database "Profile / Context" as profile
+    database "Riddle Catalog" as catalog
+    database "Session Store" as session
+    queue "Telemetry" as telemetry
+end box
+
+== Инициация ==
+
+opt#$FR_WARN_HEAD #$FR_WARN_BG Система может предложить загадку сама
+    activate riddler
+        riddler -->> ui : <<push>> RiddleOffer(contextHint, categoryHint)
+        activate ui
+            ui -->> solver : Хочешь загадку?
+            activate solver
+        deactivate ui
+    deactivate riddler
+end
+
+        alt#$FR_INFO_HEAD #$FR_INFO_BG Отгадывающий сам инициирует запрос
+            solver -> ui : Запросить загадку
+            activate ui
+        else #$FR_INFO_BG Отгадывающий принимает push-предложение
+            solver -> ui : Принять предложение
+        end
+
+            ui -> api : <<GET>> /v1/riddle
+            activate api
+                api -> riddler : getRiddle(request)
+                note right
+                    Вариации параметров запроса
+                    не рисуем отдельными ветками,
+                    пока они не меняют ход процесса
+                end note
+                    activate riddler
+
+== Разрешение контекста ==
+                riddler -> ctx : resolveEffectiveContext(request)
+                activate ctx
+
+                    ctx -> profile : readProfile(actorId)
+                    activate profile
+
+                        profile --> ctx : age, locale, history, preferences
+                    deactivate profile
+
+                    ctx -> rules : resolveDifficulty(context, requestOverrides)
+                    activate rules
+
+                        rules --> ctx : effectiveDifficulty
+                    deactivate rules
+
+                    ctx --> riddler : context, locale, excludes, effectiveDifficulty
+                deactivate ctx
+
+                note right of riddler
+                    Приоритет контекста:
+                    request -> profile -> defaults
+                end note
+
+== Подбор загадки ==
+                riddler -> catalog : findCandidate(context, locale, difficulty, category, excludes)
+                activate catalog
+
+                    alt#$FR_INFO_HEAD #$FR_INFO_BG Подходящая загадка найдена сразу
+                        catalog --> riddler : riddleId, question, answerSpec, hintPolicy
+
+                    else #$FR_WARN_BG Точного совпадения нет
+                        catalog -> catalog : broadenFilters() / fallbackDifficulty()
+                        catalog --> riddler : fallbackRiddle | empty
+                    end
+                deactivate catalog
+
+== Выдача загадки ==
+                break#$FR_CRIT_HEAD #$FR_CRIT_BG Подходящей загадки нет
+                    note right of riddler
+                        candidate == empty
+                    end note
+
+                    riddler -> api : 204 No Content / noRiddleAvailable
+                    api -> ui : empty state
+                    ui -> solver : Сейчас подходящей загадки нет
+                end
+
+                riddler -> session : createSession(riddleId, answerSpec, maxAttempts, hintPolicy, actorContext)
+                activate session
+
+                    session --> riddler : sessionId, expiresAt, attempts=0
+                deactivate session
+
+                riddler -->> telemetry : riddle_issued
+                riddler --> api : RiddleResponse(sessionId, question, expiresAt, attemptPolicy)
+                api --> ui : RiddleResponse(...)
+                ui --> solver : загадка
+
+                deactivate riddler
+            deactivate api
+        deactivate ui
+    deactivate solver
+
+
+== Ответ отгадывающего ==
+    solver -> ui : Ответ
+    activate solver
+        activate ui
+
+        ui -> api : <<POST>> /v1/riddle/{sessionId}/answer
+        activate api
+
+            note right of api
+                requestId стоит тащить
+                для идемпотентности ретраев
+            end note
+
+            api -> riddler : submitAnswer(sessionId, answer, requestId)
+            activate riddler
+
+== Проверка ответа ==
+                riddler -> session : getActiveSession(sessionId)
+                activate session
+
+                    session --> riddler : expectedAnswer? / notFound? / expired?
+                deactivate session
+
+                break#$FR_CRIT_HEAD #$FR_CRIT_BG Сессия недоступна
+                    note right of riddler
+                        session == notFound or expired
+                    end note
+
+                    riddler -> api : 404 / 410 SessionUnavailable
+                    api -> ui : SessionUnavailable
+                    ui -> solver : Сессия ответа истекла или не найдена
+                end
+
+                riddler -> evaluator : check(answer, expectedAnswer, locale, normalizationRules)
+                activate evaluator
+
+                    evaluator -> rules : normalizeAndCompare(answer, expectedAnswer)
+                    activate rules
+
+                        rules --> evaluator : verdict, normalizedAnswer
+                    deactivate rules
+
+                    evaluator --> riddler : verdict
+                deactivate evaluator
+
+                alt#$FR_INFO_HEAD #$FR_INFO_BG verdict = CORRECT
+                    riddler -> session : markSolved(sessionId)
+                    activate session
+
+                        session --> riddler : solved
+                    deactivate session
+
+                    riddler -->> telemetry : riddle_solved
+                    riddler -> api : verdict = CORRECT
+                    api -> ui : verdict = CORRECT
+                    ui -> solver : Верно
+
+                else #$FR_WARN_BG verdict = WRONG
+                    riddler -> session : markFailedAttempt(sessionId)
+                    activate session
+
+                        session --> riddler : attemptsLeft, attemptNo, hintAllowed, revealAnswer?
+                    deactivate session
+
+                    break#$FR_CRIT_HEAD #$FR_CRIT_BG Попытки исчерпаны
+                        note right of riddler
+                            attemptsLeft == 0
+                        end note
+
+                        riddler -->> telemetry : riddle_failed
+                        riddler -> api : verdict = FAILED, revealAnswer
+                        api -> ui : verdict = FAILED, revealAnswer
+                        ui -> solver : Неверно. Правильный ответ...
+                    end
+
+                    riddler -> evaluator : buildHintIfAllowed(riddleId, attemptNo, hintAllowed)
+                    activate evaluator
+
+                        evaluator --> riddler : hint?
+                    deactivate evaluator
+
+                    riddler -->> telemetry : riddle_attempt_failed
+                    riddler -> api : verdict = WRONG, hint?
+                    api -> ui : verdict = WRONG, hint?
+                    ui -> solver : Неверно
+                end
+                deactivate riddler
+            deactivate api
+        deactivate ui
+deactivate solver
+
+SEQ_LEGEND_STATUS()
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+!pragma teoz true
+!include ../../templates/styles/_style_seq.puml
+
+autonumber
+
+title
+    $B("Sub-flow: private.createSession")
+    $SM($MUTED("Инициализация сессии отгадывания"))
+end title
+
+box "Riddle Service" $BG_INFO
+    participant "Riddle Service" as riddler
+end box
+
+box "Data" $BG_CFG
+    database "Session Store" as session
+end box
+
+riddler -> riddler : private.createSession(riddleId, x-user-id)
+activate riddler
+
+    riddler -> riddler : generate sessionId (UUID)
+    riddler -> riddler : calc expiresAt (now + TTL)
+
+    riddler -> session : saveSession(sessionId, riddleId, x-user-id, expiresAt, attempts=0)
+    activate session
+        session --> riddler : success | error
+    deactivate session
+
+    break $BG_CRIT session == error
+        riddler --> riddler : SessionResponse(error)
+    end break
+
+    riddler --> riddler : SessionResponse(sessionId, expiresAt)
+deactivate riddler
+
+SEQ_LEGEND_STATUS()
+@enduml
