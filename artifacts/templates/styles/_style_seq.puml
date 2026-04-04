@@ -1,0 +1,476 @@
+' Solution/diagrams/_style_seq.puml
+!theme plain
+
+' ---------------------------------------------------------
+' Base render / typography
+' ---------------------------------------------------------
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam TitleFontSize 18
+skinparam TitleFontStyle bold
+skinparam shadowing true
+skinparam dpi 110
+skinparam roundcorner 24
+
+
+' ---------------------------------------------------------
+' Sequence layout
+' ---------------------------------------------------------
+skinparam maxMessageSize 100
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign left
+
+skinparam sequence {
+    ArrowThickness 2
+    MessageAlign left
+    ParticipantPadding 24
+    BoxPadding 10
+    LifeLineBorderColor #B0BEC5
+    LifeLineBackgroundColor #FFFFFF
+}
+
+' ---------------------------------------------------------
+' Participants
+' ---------------------------------------------------------
+skinparam participant {
+    BorderColor #90A4AE
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+skinparam actor {
+    BorderColor #90A4AE
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+skinparam boundary {
+    BorderColor #90A4AE
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+skinparam control {
+    BorderColor #90A4AE
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+skinparam entity {
+    BorderColor #90A4AE
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+skinparam database {
+    BorderColor #90A4AE
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+skinparam collections {
+    BorderColor #90A4AE
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+skinparam queue {
+    BorderColor #263238
+    BackgroundColor #FFFFFF
+    FontColor #263238
+}
+
+' ---------------------------------------------------------
+' Notes / legend
+' ---------------------------------------------------------
+skinparam note {
+    BackgroundColor #FFF8E1
+    BorderColor #FFB300
+    FontColor #263238
+}
+
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #CFD8DC
+skinparam LegendFontColor #263238
+
+' ---------------------------------------------------------
+' Semantic palette
+' ---------------------------------------------------------
+!$C_NEW      = "#00C853"
+!$C_CHG      = "#2962FF"
+!$C_DEL      = "#D50000"
+!$C_CFG      = "#7E57C2"
+
+!$C_INFO     = "#607D8B"
+!$C_WARN     = "#FF8F00"
+!$C_CRIT     = "#C62828"
+!$C_NEUTRAL  = "#64748B"
+
+!$BG_INFO    = "#EEF4FF"
+!$BG_GROUP   = "#F5F7FA"
+!$BG_WARN    = "#FFF8E1"
+!$BG_CRIT    = "#FFEBEE"
+!$BG_CFG     = "#EDEFF7"
+!$BG_NEUTRAL = "#F8FAFC"
+
+' ---------------------------------------------------------
+' Layer palette
+' ---------------------------------------------------------
+!$L_USER         = "#F5F7FA"
+!$L_BSS          = "#EAF7EE"
+!$L_BUS          = "#FFF8E8"
+!$L_PAY          = "#EEF4FF"
+!$L_EXT          = "#FCEEF3"
+!$L_CVM          = "#EDE9FE"
+!$L_UKD          = "#E6FFFA"
+!$L_PAYMENTS     = "#E8F3FF"
+!$L_CONFIG       = "#EDEFF7"
+!$L_YOTA         = "#E0F7FA"
+
+' ---------------------------------------------------------
+' Common style block
+' ---------------------------------------------------------
+<style>
+    sequenceDiagram {
+        participant {
+            LineColor #90A4AE
+            BackGroundColor #FFFFFF
+            FontColor #263238
+        }
+
+        arrow {
+            LineColor #546E7A
+            FontColor #263238
+        }
+
+        group {
+            LineColor #64748B
+            BackGroundColor #F8FAFC
+            LineThickness 1
+        }
+
+        groupHeader {
+            LineColor #64748B
+            BackGroundColor #E2E8F0
+            FontColor #0F172A
+            FontStyle bold
+        }
+
+        .p_new {
+            ShowStereotype false
+            BackGroundColor #E8F5E9
+            LineColor #00C853
+            FontColor #1B5E20
+        }
+
+        .p_chg {
+            ShowStereotype false
+            BackGroundColor #EEF4FF
+            LineColor #2962FF
+            FontColor #0D47A1
+        }
+
+        .p_rm {
+            ShowStereotype false
+            BackGroundColor #FFEBEE
+            LineColor #D50000
+            FontColor #B71C1C
+        }
+
+        .p_lg {
+            ShowStereotype false
+            BackGroundColor #FFF8E1
+            LineColor #FF8F00
+            FontColor #8A5300
+        }
+
+        .p_cfg {
+            ShowStereotype false
+            BackGroundColor #EDEFF7
+            LineColor #7E57C2
+            FontColor #4A3B76
+        }
+    }
+</style>
+
+' ---------------------------------------------------------
+' Legend macros
+' ---------------------------------------------------------
+!procedure SEQ_LEGEND_STATUS()
+    legend top left
+        |Mark     | Meaning  |<#000000>|Mark     | Meaning  |
+        |<$C_NEW> | new      |<#000000>|<#EEF4FF> | info     |
+        |<$C_CHG> | changed  |<#000000>|<#FFF8E1> | warning  |
+        |<$C_DEL> | removed  |<#000000>|<#FFEBEE> | critical |
+        |<$C_CFG> | config   |<#000000>|
+    endlegend
+!endprocedure
+
+!procedure SEQ_LEGEND_PARTICIPANTS()
+    legend bottom left
+        |= Participant |= Meaning |
+        |<#E8F5E9> | new service     |
+        |<#EEF4FF> | changed service |
+        |<#FFEBEE> | removed service |
+        |<#FFF8E1> | legacy service  |
+        |<#EDEFF7> | configuration   |
+    endlegend
+!endprocedure
+
+!procedure $LEGEND_STATUS_SEQ()
+    SEQ_LEGEND_STATUS()
+!endprocedure
+
+' ---------------------------------------------------------
+' Title / headers / footers
+' ---------------------------------------------------------
+!procedure SEQ_TITLE($TEXT)
+    title <b>$TEXT</b>
+!endprocedure
+
+!procedure SEQ_TITLE_NOT_RECOMMENDED($TEXT)
+    title <b>$TEXT</b>\n<color:#D50000><b>NOT RECOMMENDED BY ARCHITECTURE</b></color>
+!endprocedure
+
+!procedure SEQ_HEADER_WARN($TEXT)
+    header <color:#B71C1C><b>$TEXT</b></color>
+!endprocedure
+
+!procedure SEQ_FOOTER_NOTE($TEXT)
+    footer <color:#546E7A>$TEXT</color>
+!endprocedure
+
+' ---------------------------------------------------------
+' Sections / timing markers
+' ---------------------------------------------------------
+!procedure SEQ_SECTION($TEXT)
+    == <b>$TEXT</b> ==
+!endprocedure
+
+!procedure SEQ_DELAY($TEXT)
+    ... <b>$TEXT</b> ...
+!endprocedure
+
+' ---------------------------------------------------------
+' Layer helpers
+' ---------------------------------------------------------
+!procedure SEQ_LAYER_USER_BEGIN()
+    box "User / Channel" $L_USER
+!endprocedure
+
+!procedure SEQ_LAYER_BSS_BEGIN()
+    box "BSS" $L_BSS
+!endprocedure
+
+!procedure SEQ_LAYER_BUS_BEGIN()
+    box "Event / Transport" $L_BUS
+!endprocedure
+
+!procedure SEQ_LAYER_PAY_BEGIN()
+    box "Payment Core" $L_PAY
+!endprocedure
+
+!procedure SEQ_LAYER_EXT_BEGIN()
+    box "External / Partner systems" $L_EXT
+!endprocedure
+
+!procedure SEQ_LAYER_CVM_BEGIN()
+    box "CVM" $L_CVM
+!endprocedure
+
+!procedure SEQ_LAYER_UKD_BEGIN()
+    box "UKD / KHD" $L_UKD
+!endprocedure
+
+!procedure SEQ_LAYER_PAYMENTS_BEGIN()
+    box "Payments" $L_PAYMENTS
+!endprocedure
+
+!procedure SEQ_LAYER_CONFIG_BEGIN()
+    box "Configuration" $L_CONFIG
+!endprocedure
+
+!procedure SEQ_LAYER_YOTA_BEGIN()
+    box "YOTA" $L_YOTA
+!endprocedure
+
+!procedure SEQ_LAYER_CUSTOM_BEGIN($TITLE, $COLOR)
+    box "$TITLE" $COLOR
+!endprocedure
+
+!procedure SEQ_LAYER_END()
+    end box
+!endprocedure
+
+' ---------------------------------------------------------
+' Full-width partitions (teoz)
+' ---------------------------------------------------------
+!procedure SEQ_PARTITION($LABEL)
+    partition $LABEL
+!endprocedure
+
+' ---------------------------------------------------------
+' Fragment helpers
+' IMPORTANT:
+' Use these macros instead of raw alt/else/par/loop/...
+' if you want consistent color semantics.
+'
+' Info   = normal / operational / expected path
+' Warn   = degraded / fallback / retry / exception path
+' Crit   = money / safety / idempotency / hard-risk path
+' ---------------------------------------------------------
+
+' ----- ALT / ELSE -----
+!procedure SEQ_ALT_INFO($LABEL)
+    alt#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+!procedure SEQ_ALT_WARN($LABEL)
+    alt#$BG_WARN #$C_WARN $LABEL
+!endprocedure
+
+!procedure SEQ_ALT_CRIT($LABEL)
+    alt#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_ELSE_INFO($LABEL)
+    else #$BG_INFO $LABEL
+!endprocedure
+
+!procedure SEQ_ELSE_WARN($LABEL)
+    else #$BG_WARN $LABEL
+!endprocedure
+
+!procedure SEQ_ELSE_CRIT($LABEL)
+    else #$BG_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_ELSE_NEUTRAL($LABEL)
+    else #$BG_NEUTRAL $LABEL
+!endprocedure
+
+' Default aliases
+!procedure SEQ_ALT($LABEL)
+    alt#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+!procedure SEQ_ELSE($LABEL)
+    else #$BG_INFO $LABEL
+!endprocedure
+
+' ----- OPT -----
+!procedure SEQ_OPT_INFO($LABEL)
+    opt#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+!procedure SEQ_OPT_WARN($LABEL)
+    opt#$BG_WARN #$C_WARN $LABEL
+!endprocedure
+
+!procedure SEQ_OPT_CRIT($LABEL)
+    opt#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_OPT($LABEL)
+    opt#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+' ----- LOOP -----
+!procedure SEQ_LOOP_INFO($LABEL)
+    loop#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+!procedure SEQ_LOOP_WARN($LABEL)
+    loop#$BG_WARN #$C_WARN $LABEL
+!endprocedure
+
+!procedure SEQ_LOOP_CRIT($LABEL)
+    loop#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_LOOP($LABEL)
+    loop#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+' ----- PAR -----
+!procedure SEQ_PAR_INFO($LABEL)
+    par#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+!procedure SEQ_PAR_WARN($LABEL)
+    par#$BG_WARN #$C_WARN $LABEL
+!endprocedure
+
+!procedure SEQ_PAR_CRIT($LABEL)
+    par#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_PAR($LABEL)
+    par#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+' ----- BREAK -----
+!procedure SEQ_BREAK_WARN($LABEL)
+    break#$BG_WARN #$C_WARN $LABEL
+!endprocedure
+
+!procedure SEQ_BREAK_CRIT($LABEL)
+    break#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_BREAK($LABEL)
+    break#$BG_WARN #$C_WARN $LABEL
+!endprocedure
+
+' ----- CRITICAL -----
+!procedure SEQ_CRITICAL_RED($LABEL)
+    critical#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_CRITICAL($LABEL)
+    critical#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+' ----- GROUP -----
+!procedure SEQ_GROUP_INFO($LABEL)
+    group#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+!procedure SEQ_GROUP_WARN($LABEL)
+    group#$BG_WARN #$C_WARN $LABEL
+!endprocedure
+
+!procedure SEQ_GROUP_CRIT($LABEL)
+    group#$BG_CRIT #$C_CRIT $LABEL
+!endprocedure
+
+!procedure SEQ_GROUP($LABEL)
+    group#$BG_INFO #$C_INFO $LABEL
+!endprocedure
+
+' ---------------------------------------------------------
+' Ref / notes helpers
+' ---------------------------------------------------------
+!procedure SEQ_REF($WHO, $TEXT)
+    ref over $WHO
+        $TEXT
+    end ref
+!endprocedure
+
+!procedure SEQ_NOTE_RIGHT($WHO, $TEXT)
+    note right of $WHO
+        $TEXT
+    end note
+!endprocedure
+
+!procedure SEQ_NOTE_LEFT($WHO, $TEXT)
+    note left of $WHO
+        $TEXT
+    end note
+!endprocedure
+
+!procedure SEQ_NOTE_OVER($WHO, $TEXT)
+    note over $WHO
+        $TEXT
+    end note
+!endprocedure

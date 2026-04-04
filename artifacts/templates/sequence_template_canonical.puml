@@ -1,0 +1,113 @@
+@startuml
+!pragma teoz true
+!include _style_seq_canonical.puml
+
+autonumber
+
+' =========================================================
+' Sequence template — canonical baseline
+' =========================================================
+' Usage:
+'   1. Replace title / subtitle.
+'   2. Keep one process or one public operation per diagram.
+'   3. Keep only needed layers.
+'   4. Use style macros instead of manual arrow coloring.
+'   5. Split large branches into refs / subflows.
+'
+' Participant tags:
+'   <<p_new>>     new component / service
+'   <<p_chg>>     changed component / service
+'   <<p_rm>>      removed component / service
+'   <<p_legacy>>  legacy component / service
+'   <<p_cfg>>     configuration / rules / policy source
+'   <<p_ext>>     external actor / partner / world interaction
+'
+SEQ_TITLE("{{Process title}}")
+SEQ_SUBTITLE("{{Scope / context / optional link}}")
+SEQ_LEGEND_FULL_TOP_RIGHT()
+SEQ_FOOTER_NOTE("One process = one diagram")
+
+SEQ_LAYER_USER_BEGIN()
+    actor "{{Actor / initiator}}" as actor_1
+    actor "{{Observer / consumer}}" as actor_2
+SEQ_LAYER_END()
+
+SEQ_LAYER_API_BEGIN()
+    boundary "{{Channel / entry point}}" as channel <<p_chg>>
+SEQ_LAYER_END()
+
+SEQ_LAYER_CORE_BEGIN()
+    control "{{Orchestrator / core logic}}" as orchestrator <<p_new>>
+    control "{{Helper / resolver}}" as resolver
+SEQ_LAYER_END()
+
+SEQ_LAYER_CFG_BEGIN()
+    entity "{{Rules / policy / semantics}}" as rules <<p_cfg>>
+SEQ_LAYER_END()
+
+SEQ_LAYER_DATA_BEGIN()
+    database "{{State / storage}}" as state
+SEQ_LAYER_END()
+
+SEQ_LAYER_EXT_BEGIN()
+    actor "{{External actor / world event}}" as ext <<p_ext>>
+SEQ_LAYER_END()
+
+SEQ_SECTION("Initial state")
+SEQ_REQ(actor_1, channel, "{{Start process}}")
+activate channel
+    SEQ_REQ_CHG(channel, orchestrator, "{{Validate / normalize input}}")
+    activate orchestrator
+        SEQ_REQ(orchestrator, state, "{{Persist initial state}}")
+        activate state
+        SEQ_RESP_OK(state, orchestrator, "ok")
+        deactivate state
+    SEQ_RESP_OK(orchestrator, channel, "accepted")
+    deactivate orchestrator
+SEQ_RESP_OK(channel, actor_1, "ok")
+deactivate channel
+
+SEQ_SECTION("Optional branching")
+SEQ_ALT_INFO("Main path")
+    SEQ_NOTE_RIGHT(orchestrator, "Use info / warn / crit fragments to mark intent")
+SEQ_ELSE_WARN("Retry / degraded path")
+    SEQ_NOTE_RIGHT(orchestrator, "Document timeout, retry, fallback, compensation")
+end
+
+SEQ_SECTION("External event")
+SEQ_ASYNC(ext, orchestrator, "{{External event / signal}}")
+activate orchestrator
+    SEQ_GROUP_INFO("State transition")
+        SEQ_REQ(orchestrator, state, "{{Update state}}")
+        activate state
+        SEQ_RESP_OK(state, orchestrator, "updated")
+        deactivate state
+    end
+
+    ref over orchestrator, state
+        {{Optional subflow / detailed branch}}
+    end ref
+
+deactivate orchestrator
+
+SEQ_SECTION("Answer / final state")
+SEQ_REQ(actor_2, resolver, "{{Request final answer}}")
+activate resolver
+    SEQ_REQ_CFG(resolver, rules, "{{Interpretation rules}}")
+    activate rules
+    SEQ_RESP_OK(rules, resolver, "{{Semantic clarification}}")
+    deactivate rules
+
+    SEQ_REQ(resolver, state, "{{Read final state}}")
+    activate state
+    SEQ_RESP_OK(state, resolver, "{{Final state}}")
+    deactivate state
+
+    SEQ_OPT_WARN("Common ambiguity / caveat")
+        SEQ_NOTE_LEFT(resolver, "Fix reader ambiguity explicitly if the process allows misinterpretation")
+    end
+
+    SEQ_RESP_OK(resolver, actor_2, "{{Final answer}}")
+deactivate resolver
+
+@enduml

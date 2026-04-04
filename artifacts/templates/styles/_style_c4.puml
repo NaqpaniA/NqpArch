@@ -1,0 +1,111 @@
+' Solution/diagrams/_style_c4.puml
+!theme plain
+
+' --- Layout ---
+skinparam shadowing false
+skinparam linetype ortho
+skinparam dpi 160
+skinparam nodesep 70
+skinparam ranksep 60
+skinparam Padding 12
+
+' --- Typography ---
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam TitleFontSize 18
+skinparam TitleFontStyle bold
+
+' --- Stereotypes visible ---
+skinparam stereotypeFontSize 10
+skinparam stereotypeFontStyle italic
+skinparam stereotypeFontColor #546E7A
+
+' --- Boundaries ---
+skinparam packageStyle rectangle
+skinparam packageBorderColor #B0BEC5
+skinparam packageBackgroundColor #FAFAFA
+skinparam packageFontStyle bold
+skinparam packageFontColor #263238
+
+' --- Nodes ---
+skinparam rectangleRoundCorner 12
+skinparam RectangleBorderColor #90A4AE
+skinparam RectangleBackgroundColor #FFFFFF
+skinparam RectangleFontColor #263238
+
+' --- Node styles by stereotype ---
+skinparam rectangle<<System>> {
+  BorderColor #607D8B
+  BackgroundColor #FFFFFF
+}
+skinparam rectangle<<Bus>> {
+  BorderColor #2E7D32
+  BackgroundColor #F1F8E9
+}
+skinparam rectangle<<Broker>> {
+  BorderColor #6A1B9A
+  BackgroundColor #F3E5F5
+}
+skinparam rectangle<<External>> {
+  BorderColor #455A64
+  BackgroundColor #ECEFF1
+}
+
+' --- Invisible anchors for stable grid layout ---
+skinparam rectangle<<Anchor>> {
+  BorderColor transparent
+  BackgroundColor transparent
+  FontColor transparent
+}
+
+' --- Arrows ---
+skinparam ArrowThickness 2
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #263238
+
+' --- Notes / legend ---
+skinparam noteBackgroundColor #FFF8E1
+skinparam noteBorderColor #FFB300
+skinparam legendBackgroundColor #FFFFFF
+skinparam legendBorderColor #CFD8DC
+skinparam legendFontSize 11
+
+' --- Status colors ---
+!$C_NEW = "#00C853"
+!$C_CHG = "#2962FF"
+!$C_DEL = "#D50000"
+
+' --- Macros: relations ---
+!procedure $SYNC_NEW($from, $to, $label)
+$from -[$C_NEW]-> $to : $label
+!endprocedure
+
+!procedure $SYNC_CHG($from, $to, $label)
+$from -[$C_CHG]-> $to : $label
+!endprocedure
+
+!procedure $SYNC_DEL($from, $to, $label)
+$from -[$C_DEL,dashed]-> $to : $label
+!endprocedure
+
+!procedure $ASYNC_NEW($from, $to, $label)
+$from ..[$C_NEW]> $to : $label
+!endprocedure
+
+!procedure $ASYNC_CHG($from, $to, $label)
+$from ..[$C_CHG]> $to : $label
+!endprocedure
+
+!procedure $ASYNC_DEL($from, $to, $label)
+$from ..[$C_DEL,dashed]> $to : $label
+!endprocedure
+
+' --- Legend macro ---
+!procedure $LEGEND_STATUS_C4()
+legend bottom right
+  |= Цвет |= Статус |
+  |<#00C853> | new |
+  |<#2962FF> | edit |
+  |<#D50000> | delete |
+endlegend
+!endprocedure
